@@ -5,7 +5,7 @@
     <meta name="theme-color" content="#1e1e2e">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facebook Exit Guide v1.0.0</title>
+<title>Facebook Exit Guide v1.1.0</title>
 <style>
   :root {
     --crust: #11111b;
@@ -500,6 +500,247 @@
   ::-webkit-scrollbar-track { background: var(--crust); }
   ::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--surface2); }
+
+  /* Category progress bars */
+  .category-progress {
+    margin-bottom: 16px;
+  }
+  .category-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .category-progress-header .cat-label {
+    font-size: 0.85rem;
+    color: var(--subtext0);
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .category-progress-header .cat-pct {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--green);
+  }
+  .cat-bar {
+    height: 6px;
+    background: var(--surface0);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .cat-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    width: 0%;
+  }
+  .cat-fill.cat-critical { background: linear-gradient(90deg, var(--red), var(--maroon)); }
+  .cat-fill.cat-important { background: linear-gradient(90deg, var(--peach), var(--yellow)); }
+  .cat-fill.cat-optional { background: linear-gradient(90deg, var(--blue), var(--sapphire)); }
+
+  /* Confirmation modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: var(--base);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    text-align: center;
+  }
+  .modal-box h3 {
+    color: var(--red);
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+  }
+  .modal-box p {
+    color: var(--subtext1);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  /* Email template cards */
+  .email-template {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface0);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+  }
+  .email-template:hover {
+    background: var(--surface1);
+  }
+  .email-template .provider-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.9rem;
+    min-width: 100px;
+  }
+  .email-template code {
+    background: var(--crust);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: var(--blue);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    flex: 1;
+    word-break: break-all;
+  }
+  .email-template .btn-copy {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    background: var(--surface1);
+    border: 1px solid var(--surface2);
+    border-radius: 6px;
+    color: var(--subtext0);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .email-template .btn-copy:hover {
+    border-color: var(--lavender);
+    color: var(--text);
+  }
+
+  /* Severity badges for "what will break" */
+  .severity-high { color: var(--red); }
+  .severity-medium { color: var(--peach); }
+  .severity-low { color: var(--blue); }
+  .break-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface0);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .break-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+  }
+  .break-content {
+    flex: 1;
+  }
+  .break-content strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+  }
+  .break-content span {
+    font-size: 0.82rem;
+    color: var(--overlay1);
+    line-height: 1.4;
+  }
+
+  /* Print styles */
+  @media print {
+    body {
+      background: #fff !important;
+      color: #111 !important;
+    }
+    body::before { display: none !important; }
+    .container { max-width: 100%; padding: 0; }
+    .header h1 {
+      background: none !important;
+      -webkit-text-fill-color: #111 !important;
+      color: #111 !important;
+      font-size: 1.8rem;
+    }
+    .header .subtitle { color: #444 !important; }
+    .header .version { background: #eee; color: #666; }
+    .tabs { display: none !important; }
+    .panel { display: block !important; page-break-inside: avoid; margin-bottom: 24px; }
+    .card, .progress-container {
+      background: #fff !important;
+      backdrop-filter: none !important;
+      border: 1px solid #ddd !important;
+      box-shadow: none !important;
+      color: #111 !important;
+      page-break-inside: avoid;
+    }
+    .card h2 { color: #222 !important; }
+    .card h2 .step-num {
+      background: #333 !important;
+      color: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .card p, .card li, .item-desc { color: #333 !important; }
+    .card a { color: #0066cc !important; }
+    .highlight-box, .warning-box {
+      background: #f5f5f5 !important;
+      border-color: #999 !important;
+      color: #333 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .checklist-item {
+      background: #fff !important;
+      border: 1px solid #ddd !important;
+      backdrop-filter: none !important;
+    }
+    .checklist-item.checked { background: #f0fff0 !important; }
+    .item-title { color: #111 !important; }
+    .check-box {
+      border-color: #999 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .checklist-item.checked .check-box {
+      background: #28a745 !important;
+      border-color: #28a745 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .item-tag {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .btn, .btn-outline, .btn-sm, .add-app-row, .export-area,
+    .actions-row, .guide-toggle, .modal-overlay, .email-template .btn-copy { display: none !important; }
+    .progress-bar { border: 1px solid #ccc; }
+    .progress-fill {
+      background: #333 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .progress-pct, .progress-header h3, .progress-stats span, .progress-stats span strong {
+      color: #111 !important;
+    }
+    .footer { color: #999 !important; border-top: 1px solid #ddd; padding-top: 12px; }
+    .migration-guide { display: block !important; border: 1px solid #ddd; }
+    .category-progress .cat-fill {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cat-bar { border: 1px solid #ccc; }
+    .cat-label, .cat-pct { color: #333 !important; }
+  }
 </style>
 </head>
 <body>
@@ -508,7 +749,7 @@
   <header class="header">
     <h1>Facebook Exit Guide</h1>
     <p class="subtitle">A guided walkthrough to identify every app, service, and login tied to your Facebook account — so you can migrate cleanly before deleting it.</p>
-    <span class="version">v1.0.0</span>
+    <span class="version">v1.1.0</span>
   </header>
 
   <!-- Progress -->
@@ -576,16 +817,103 @@
 
     <div class="card stagger" style="animation-delay: 0.2s">
       <h2><span class="step-num">4</span> Check Your Phone's App Permissions</h2>
-      <p>Many mobile apps use Facebook login silently:</p>
-      <ol>
-        <li><strong>iPhone:</strong> Settings &rarr; scroll to Facebook &rarr; see linked apps</li>
-        <li><strong>Android:</strong> Settings &rarr; Accounts &rarr; Facebook &rarr; Account sync</li>
-        <li>Also check your phone's app list — try logging out of each app and see which ones offer "Log in with Facebook" as the primary option</li>
-      </ol>
+      <p>Many mobile apps use Facebook login silently. Follow the steps for your platform:</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+        <div style="padding:16px; background:rgba(137,180,250,0.08); border-radius:8px;">
+          <h4 style="color:var(--blue); margin-bottom:8px;">iOS (iPhone/iPad)</h4>
+          <ol style="font-size:0.85rem; padding-left:16px;">
+            <li>Open <strong>Settings</strong> &rarr; scroll down to <strong>Facebook</strong></li>
+            <li>Tap to see apps with Facebook access</li>
+            <li>Also check <strong>Settings &rarr; Privacy &rarr; Tracking</strong> for apps using Facebook tracking</li>
+            <li>Go to <strong>Settings &rarr; [Your Name] &rarr; Password & Security &rarr; Sign in with Apple</strong> to compare what uses Apple vs Facebook login</li>
+            <li>Review <strong>Settings &rarr; Passwords</strong> for missing entries (likely social logins)</li>
+          </ol>
+        </div>
+        <div style="padding:16px; background:rgba(166,227,161,0.08); border-radius:8px;">
+          <h4 style="color:var(--green); margin-bottom:8px;">Android</h4>
+          <ol style="font-size:0.85rem; padding-left:16px;">
+            <li>Open <strong>Settings &rarr; Accounts</strong> (or Passwords & Accounts)</li>
+            <li>Tap <strong>Facebook</strong> to see synced apps</li>
+            <li>Check <strong>Settings &rarr; Google &rarr; Security &rarr; Third-party apps with account access</strong> to compare</li>
+            <li>Open <strong>Play Store &rarr; Profile &rarr; Manage apps</strong> to review installed apps</li>
+            <li>Check <strong>Settings &rarr; Passwords & Autofill</strong> for saved credentials (missing = social login)</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="highlight-box" style="margin-top:12px;">
+        <strong>Quick test:</strong> Log out of each suspicious app one by one. If the only sign-in option is "Continue with Facebook" and there's no email/password option, that app needs migration before you delete Facebook.
+      </div>
     </div>
 
     <div class="card stagger" style="animation-delay: 0.25s">
-      <h2><span class="step-num">5</span> Download Your Facebook Data</h2>
+      <h2><span class="step-num">5</span> Email Search Templates</h2>
+      <p>Copy these search queries into your email provider to surface accounts linked to Facebook:</p>
+      <div style="margin-top: 12px;">
+        <div class="email-template">
+          <span class="provider-name">Gmail</span>
+          <code>"connected your facebook" OR "logged in with facebook" OR "facebook account" OR from:facebookmail.com</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Gmail (filter)</span>
+          <code>has:nouserlabels "sign in with facebook" OR "facebook login" OR "linked your facebook"</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Outlook</span>
+          <code>"connected your facebook" OR "logged in with facebook" OR from:facebookmail.com</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Yahoo Mail</span>
+          <code>from:facebookmail.com OR subject:"facebook account" OR "sign in with facebook"</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Proton Mail</span>
+          <code>facebook login OR connected facebook OR from:facebookmail.com</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Apple Mail</span>
+          <code>"facebook" "login" OR "connected" OR "sign in"</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Zoho Mail</span>
+          <code>subject:facebook login OR from:facebookmail.com</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+        <div class="email-template">
+          <span class="provider-name">Thunderbird</span>
+          <code>facebook login connected sign in</code>
+          <button class="btn-copy" onclick="copyTemplate(this)">Copy</button>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-top: 12px;">
+        Look for welcome emails, login notifications, and password-related emails. If a service never sent you a password reset, you likely used Facebook to sign in.
+      </div>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.3s">
+      <h2><span class="step-num">6</span> Review Off-Facebook Activity</h2>
+      <p>Meta's <strong>Off-Facebook Activity</strong> tool shows you which businesses and organizations share your activity with Facebook. Reviewing this before deleting helps you understand which services are tracking you via Facebook:</p>
+      <ol>
+        <li>Go to <a href="https://www.facebook.com/off_facebook_activity" target="_blank" rel="noopener">Off-Facebook Activity</a></li>
+        <li>Click <strong>"Manage Your Off-Facebook Activity"</strong></li>
+        <li>Review each business listed &mdash; these are sharing data with Facebook about your activity on their platforms</li>
+        <li>Click <strong>"Clear History"</strong> to disconnect past activity from your account</li>
+        <li>Toggle <strong>"Future Off-Facebook Activity"</strong> to OFF to stop new connections</li>
+      </ol>
+      <div class="highlight-box">
+        Clearing Off-Facebook Activity won't delete your accounts on those services, but it disconnects Facebook's data collection about your activity on them. Do this before deletion so these services can no longer feed data to your Facebook profile.
+      </div>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.35s">
+      <h2><span class="step-num">7</span> Download Your Facebook Data</h2>
       <p>Facebook's data download includes a list of all apps that have ever accessed your data:</p>
       <ol>
         <li>Go to <a href="https://www.facebook.com/dyi" target="_blank" rel="noopener">Download Your Information</a></li>
@@ -745,6 +1073,8 @@
       </div>
     </div>
 
+    <div id="categoryProgress" style="display:none;"></div>
+
     <div id="checklistContainer">
       <ul class="checklist" id="checklist"></ul>
     </div>
@@ -824,6 +1154,7 @@
       <div class="actions-row">
         <button class="btn" onclick="exportChecklist()">Export as Text</button>
         <button class="btn btn-outline" onclick="exportJSON()">Export as JSON</button>
+        <button class="btn btn-outline" onclick="exportICS()">Export as Calendar (.ics)</button>
       </div>
       <div class="export-area" id="exportArea" style="display:none; margin-top:16px;">
         <textarea id="exportText" readonly></textarea>
@@ -880,6 +1211,150 @@
     </div>
 
     <div class="card stagger" style="animation-delay: 0.1s">
+      <h2>What Will Break</h2>
+      <p>When you delete Facebook, the following services lose their login method. This simulator uses your checklist to show the impact:</p>
+      <div id="breakSimulator">
+        <div id="breakList"></div>
+        <div id="breakEmpty" style="text-align:center; color:var(--overlay1); padding:20px;">
+          <p>Add apps to your "My Apps Checklist" to see what will break when you delete Facebook. Items marked as not yet migrated will appear here as at-risk services.</p>
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <h4 style="color:var(--subtext1); font-size:0.9rem; margin-bottom: 10px;">Services that always break (no migration possible):</h4>
+        <div class="break-item">
+          <div class="break-icon severity-high">!!</div>
+          <div class="break-content">
+            <strong class="severity-high">Facebook Messenger</strong>
+            <span>All chat history and active conversations are lost. Move important chats to Signal, WhatsApp, or another platform first.</span>
+          </div>
+        </div>
+        <div class="break-item">
+          <div class="break-icon severity-high">!!</div>
+          <div class="break-content">
+            <strong class="severity-high">Facebook Marketplace</strong>
+            <span>All listings, seller ratings, and transaction history are permanently deleted with no migration path.</span>
+          </div>
+        </div>
+        <div class="break-item">
+          <div class="break-icon severity-medium">!</div>
+          <div class="break-content">
+            <strong class="severity-medium">Facebook Groups</strong>
+            <span>You lose access to all groups. Save important posts/files. Groups you created will need a new admin or will be deleted.</span>
+          </div>
+        </div>
+        <div class="break-item">
+          <div class="break-icon severity-medium">!</div>
+          <div class="break-content">
+            <strong class="severity-medium">Facebook Events</strong>
+            <span>All event history is lost. Screenshot or export upcoming event details and RSVPs.</span>
+          </div>
+        </div>
+        <div class="break-item">
+          <div class="break-icon severity-low">i</div>
+          <div class="break-content">
+            <strong class="severity-low">Facebook Comments & Reactions</strong>
+            <span>All your comments on others' posts and reactions will be removed across the platform.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.15s">
+      <h2>Safety Backup Checklist</h2>
+      <p>Make sure you've backed up everything before proceeding with deletion:</p>
+      <ul class="checklist" id="safetyChecklist">
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-photos">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Downloaded all photos and videos</div>
+            <div class="item-desc">Use Facebook's Download Your Information tool, select Photos and Videos, High quality</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-messenger">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Archived Messenger conversations</div>
+            <div class="item-desc">Download messages via DYI tool. Consider screenshotting important threads.</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-events">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Exported event calendars</div>
+            <div class="item-desc">Go to facebook.com/events > Your Events > Export to save upcoming events to your calendar app</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-groups">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Saved important group content</div>
+            <div class="item-desc">Screenshot or copy important posts, files, and links from groups you participate in</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-contacts">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Saved friend contact information</div>
+            <div class="item-desc">Manually record phone numbers and emails for friends you want to stay in touch with</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-pages">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Exported Page / Business data (if applicable)</div>
+            <div class="item-desc">Use Business Suite to export page insights, content, and audience data</div>
+          </div>
+        </li>
+        <li class="checklist-item" onclick="toggleSafety(this)" data-key="sf-posts">
+          <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke="#1e1e2e"/></svg></div>
+          <div class="item-content">
+            <div class="item-title">Downloaded posts and notes</div>
+            <div class="item-desc">Include your posts, notes, and any content you want to preserve in the DYI download</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.2s">
+      <h2>Alternate Platform Recommendations</h2>
+      <p>Meta-free replacements for the social features you'll lose:</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+        <div style="padding:14px; background:var(--surface0); border-radius:8px;">
+          <h4 style="color:var(--teal); margin-bottom:6px; font-size:0.85rem;">Social Networking</h4>
+          <ul style="font-size:0.82rem; padding-left:16px; color:var(--subtext0);">
+            <li>Mastodon / Bluesky</li>
+            <li>Threads (Meta-owned)</li>
+            <li>Discord communities</li>
+          </ul>
+        </div>
+        <div style="padding:14px; background:var(--surface0); border-radius:8px;">
+          <h4 style="color:var(--teal); margin-bottom:6px; font-size:0.85rem;">Messaging</h4>
+          <ul style="font-size:0.82rem; padding-left:16px; color:var(--subtext0);">
+            <li>Signal (privacy-focused)</li>
+            <li>WhatsApp (Meta-owned)</li>
+            <li>Telegram</li>
+          </ul>
+        </div>
+        <div style="padding:14px; background:var(--surface0); border-radius:8px;">
+          <h4 style="color:var(--teal); margin-bottom:6px; font-size:0.85rem;">Marketplace</h4>
+          <ul style="font-size:0.82rem; padding-left:16px; color:var(--subtext0);">
+            <li>OfferUp / Mercari</li>
+            <li>Craigslist</li>
+            <li>Nextdoor</li>
+          </ul>
+        </div>
+        <div style="padding:14px; background:var(--surface0); border-radius:8px;">
+          <h4 style="color:var(--teal); margin-bottom:6px; font-size:0.85rem;">Groups / Events</h4>
+          <ul style="font-size:0.82rem; padding-left:16px; color:var(--subtext0);">
+            <li>Discord servers</li>
+            <li>Meetup.com</li>
+            <li>Reddit communities</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.3s">
       <h2>Deactivation vs. Deletion</h2>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
         <div style="padding:16px; background:rgba(137,180,250,0.08); border-radius:8px;">
@@ -908,7 +1383,7 @@
       </div>
     </div>
 
-    <div class="card stagger" style="animation-delay: 0.15s">
+    <div class="card stagger" style="animation-delay: 0.35s">
       <h2>How to Delete Your Facebook Account</h2>
       <ol>
         <li>Go to <a href="https://www.facebook.com/help/delete_account" target="_blank" rel="noopener">facebook.com/help/delete_account</a></li>
@@ -923,7 +1398,28 @@
       </div>
     </div>
 
-    <div class="card stagger" style="animation-delay: 0.2s">
+    <div class="card stagger" style="animation-delay: 0.4s">
+      <h2>30-Day Regret Buffer</h2>
+      <p>Finished your checklist but not ready to commit? Set a 30-day waiting period reminder to give yourself time to be sure:</p>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+        <button class="btn" onclick="startRegretBuffer()">Start 30-Day Wait</button>
+        <span id="regretStatus" style="color:var(--overlay1); font-size:0.85rem;"></span>
+      </div>
+      <div id="regretActive" style="display:none; margin-top:16px;">
+        <div style="padding:16px; background:rgba(166,227,161,0.08); border-radius:8px; border:1px solid rgba(166,227,161,0.15);">
+          <p style="color:var(--green); font-weight:600; margin-bottom:4px;" id="regretCountdown"></p>
+          <p style="font-size:0.85rem; color:var(--subtext0);">Use this time to make sure all your apps work without Facebook. If any service breaks, come back and migrate it before proceeding.</p>
+        </div>
+        <div class="actions-row" style="margin-top:10px;">
+          <button class="btn btn-outline btn-sm" onclick="cancelRegretBuffer()">Cancel Waiting Period</button>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-top:12px;">
+        This is a personal reminder only. It does not interact with Facebook. You can start the actual deletion whenever you feel ready.
+      </div>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.45s">
       <h2>After Deletion</h2>
       <ul>
         <li>Clear Facebook cookies from your browsers to avoid accidental reactivation</li>
@@ -936,8 +1432,20 @@
   </div>
 
   <footer class="footer">
-    <p>Facebook Exit Guide v1.0.0 &mdash; All data stored locally in your browser. Nothing is sent to any server.</p>
+    <p>Facebook Exit Guide v1.1.0 &mdash; All data stored locally in your browser. Nothing is sent to any server.</p>
   </footer>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay hidden" id="confirmModal">
+  <div class="modal-box">
+    <h3 id="modalTitle">Are you sure?</h3>
+    <p id="modalMessage">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modalConfirm">Confirm</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -950,13 +1458,15 @@
   let state = loadState();
 
   function defaultState() {
-    return { apps: [], predelete: {} };
+    return { apps: [], predelete: {}, safety: {} };
   }
 
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : defaultState();
+      const s = raw ? JSON.parse(raw) : defaultState();
+      if (!s.safety) s.safety = {};
+      return s;
     } catch { return defaultState(); }
   }
 
@@ -984,7 +1494,9 @@
       list.innerHTML = '';
       empty.style.display = 'block';
       actions.style.display = 'none';
+      renderCategoryProgress();
       updateProgress();
+      renderBreakSimulator();
       return;
     }
 
@@ -1022,7 +1534,9 @@
       </li>`;
     }).join('');
 
+    renderCategoryProgress();
     updateProgress();
+    renderBreakSimulator();
   }
 
   function escapeHtml(str) {
@@ -1031,18 +1545,52 @@
     return div.innerHTML;
   }
 
-  // Migration guides for common services
+  // Migration guides for common services (expanded library)
   function getMigrationGuide(name) {
     const guides = {
       'spotify': ['Go to spotify.com/account', 'Set or change your password under "Change password"', 'Go to "Social" section and disconnect Facebook', 'Log out and test logging in with email + new password'],
       'airbnb': ['Go to airbnb.com > Account > Login & Security', 'Add your email address if not already set', 'Click "Set password" to create a standalone password', 'Under "Social accounts", disconnect Facebook', 'Log out and test email/password login'],
       'uber': ['Open the Uber app > Account > Settings', 'Ensure your email and phone number are set', 'Go to Security > Password and create a password', 'Disconnect Facebook under linked accounts'],
+      'uber eats': ['Open the Uber Eats app > Account > Settings', 'Ensure your email and phone number are set', 'Go to Security > Password and create a password', 'Disconnect Facebook under linked accounts'],
       'tinder': ['Open Tinder > Settings > Account', 'Add your phone number or email if not set', 'Create a password for your account', 'Log out and log back in with phone/email to verify'],
       'instagram': ['Go to Instagram Settings > Account Center', 'Ensure you have a separate password set', 'Note: Instagram is a Meta product but uses its own login', 'Deleting Facebook will NOT delete Instagram unless you choose it'],
       'pinterest': ['Go to pinterest.com/settings', 'Under Account settings, ensure email is set', 'Create a password if you only used Facebook login', 'Disconnect Facebook under "Social permissions"'],
       'canva': ['Go to canva.com > Account Settings', 'Add your email if not set', 'Set a password under Security', 'Remove Facebook from connected accounts'],
       'doordash': ['Open DoorDash > Account > Account Details', 'Verify your email address is on file', 'Set a password if not already set', 'Disconnect Facebook login'],
       'strava': ['Go to strava.com/settings/profile', 'Ensure your email is set', 'Go to "My Account" and set a password', 'Disconnect Facebook under connected services'],
+      'bumble': ['Open Bumble > Settings > Account', 'Add your phone number if not already linked', 'You can switch to phone-number-only login', 'Log out and test logging in with phone number'],
+      'hinge': ['Open Hinge > Settings', 'Add your phone number for login', 'Hinge now supports phone-only login', 'Log out and verify phone login works before disconnecting Facebook'],
+      'okcupid': ['Go to OkCupid Settings > Account', 'Add an email address and set a password', 'Disconnect Facebook under linked accounts', 'Log out and test email/password login'],
+      'soundcloud': ['Go to soundcloud.com/settings', 'Add your email address under Account', 'Set a password under Password', 'Disconnect Facebook under Connections'],
+      'deezer': ['Go to deezer.com > Account > Manage My Account', 'Add your email if not already set', 'Create a password under Security', 'Disconnect Facebook from connected services'],
+      'epic games': ['Go to epicgames.com/account/connections', 'Ensure your email is verified', 'Set a password under Password & Security', 'Disconnect Facebook under Connected Accounts'],
+      'roblox': ['Go to roblox.com > Settings > Account Info', 'Add an email address and verify it', 'Set a password under Security', 'Disconnect Facebook under Social Networks'],
+      'etsy': ['Go to etsy.com > Account Settings > Password', 'Set an email/password if using Facebook login', 'Go to Security and disconnect Facebook', 'Log out and test email/password login'],
+      'instacart': ['Open Instacart > Account Settings', 'Verify your email and phone number', 'Set a password under Security', 'Disconnect Facebook login from connected accounts'],
+      'groupon': ['Go to groupon.com > My Account > Account Settings', 'Ensure email address is verified', 'Set a password under Login & Security', 'Remove Facebook connection'],
+      'poshmark': ['Go to Poshmark > Account Settings', 'Add email and set a password', 'Disconnect Facebook under Connected Accounts', 'Test email/password login'],
+      'wish': ['Open Wish > Profile > Settings', 'Add your email address', 'Set a standalone password', 'Disconnect Facebook login'],
+      'booking.com': ['Go to booking.com > Account Settings', 'Add or verify your email address', 'Set a password under Security', 'Remove Facebook from linked accounts'],
+      'tripadvisor': ['Go to tripadvisor.com > Account Settings', 'Add email and create a password', 'Disconnect Facebook under Linked Accounts', 'Log out and test the new login'],
+      'skyscanner': ['Go to skyscanner.com > Profile > Settings', 'Add your email address', 'Set a password', 'Disconnect Facebook login'],
+      'medium': ['Go to medium.com/me/settings', 'Add your email under Account', 'Set a password', 'Disconnect Facebook under Security'],
+      'goodreads': ['Go to goodreads.com > Account Settings', 'Add email and set a password (may need Amazon login)', 'Disconnect Facebook under Apps', 'Test email/password login'],
+      'pocket': ['Go to getpocket.com > Options > Account', 'Verify your email is set', 'Create a password if using Facebook login', 'Disconnect Facebook from connected services'],
+      'flipboard': ['Open Flipboard > Profile > Settings', 'Add your email and set a password', 'Disconnect Facebook under Connected Accounts', 'Test email/password login'],
+      'zoom': ['Go to zoom.us > Profile > Sign-In Email', 'Add email and set a password under Security', 'Disconnect Facebook under Linked Accounts', 'Log out and test email/password login'],
+      'asana': ['Go to asana.com > Profile Settings', 'Verify your email', 'Set a password under Account', 'Disconnect Facebook from connected services'],
+      'trello': ['Go to trello.com > Settings', 'Add email and set a password', 'Change authentication method to email/password', 'Disconnect Facebook'],
+      'myfitnesspal': ['Open MyFitnessPal > Settings > Account', 'Add your email address', 'Set a standalone password', 'Disconnect Facebook under Connected Apps'],
+      'headspace': ['Open Headspace > Settings > Account', 'Add your email and set a password', 'Disconnect Facebook login', 'Test email/password login'],
+      'peloton': ['Open the Peloton app > Profile > Settings', 'Add email and set a password', 'Disconnect Facebook login', 'Log out and verify email/password works'],
+      'nike run club': ['Open Nike Run Club > Settings > Account', 'Add your email if not set', 'Create a Nike password', 'Remove Facebook from connected services'],
+      'depop': ['Open Depop > Profile > Settings', 'Add email and set a password', 'Disconnect Facebook login', 'Test email/password login'],
+      'mercari': ['Open Mercari > Account > Profile', 'Add email and set a password', 'Disconnect Facebook under Connected Accounts', 'Log out and test email/password login'],
+      'offerup': ['Open OfferUp > Account Settings', 'Add email and set a password', 'Disconnect Facebook login', 'Test email/password login'],
+      'discord': ['Go to Discord > User Settings > Connections', 'Discord uses its own login (email/password)', 'Simply disconnect Facebook under Connections', 'No migration needed if you already have a Discord password'],
+      'whatsapp': ['WhatsApp uses phone number login only', 'Your WhatsApp account is independent of Facebook', 'No migration action needed', 'Note: WhatsApp is Meta-owned but operates independently'],
+      'snapchat': ['Snapchat uses email/phone login only', 'No Facebook login integration', 'No migration action needed'],
+      'grindr': ['Open Grindr > Settings > Account', 'Add email and set a password', 'Disconnect Facebook from linked accounts', 'Test email/password login'],
     };
     const key = name.toLowerCase().trim();
     return guides[key] || null;
@@ -1051,6 +1599,118 @@
   window.toggleGuide = function(id) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('show');
+  };
+
+  // Category progress bars
+  function renderCategoryProgress() {
+    const container = document.getElementById('categoryProgress');
+    if (state.apps.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+    const priorities = ['critical', 'important', 'optional'];
+    const labels = { critical: 'Critical', important: 'Important', optional: 'Optional' };
+
+    let html = '<div class="card"><h2>Progress by Priority</h2>';
+    priorities.forEach(p => {
+      const items = state.apps.filter(a => a.priority === p);
+      if (items.length === 0) return;
+      const done = items.filter(a => a.done).length;
+      const pct = Math.round((done / items.length) * 100);
+      html += `<div class="category-progress">
+        <div class="category-progress-header">
+          <span class="cat-label">${labels[p]} (${done}/${items.length})</span>
+          <span class="cat-pct">${pct}%</span>
+        </div>
+        <div class="cat-bar">
+          <div class="cat-fill cat-${p}" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // "What will break" simulator
+  function renderBreakSimulator() {
+    const listEl = document.getElementById('breakList');
+    const emptyEl = document.getElementById('breakEmpty');
+    if (!listEl) return;
+
+    const unmigrated = state.apps.filter(a => !a.done);
+    if (unmigrated.length === 0) {
+      listEl.innerHTML = '';
+      emptyEl.style.display = state.apps.length > 0 ? 'none' : 'block';
+      if (state.apps.length > 0) {
+        listEl.innerHTML = '<div style="text-align:center; color:var(--green); padding:20px; font-weight:600;">All apps have been migrated. You are ready to proceed with deletion.</div>';
+      }
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+    const severityMap = { critical: 'high', important: 'medium', optional: 'low' };
+    const iconMap = { high: '!!', medium: '!', low: 'i' };
+
+    listEl.innerHTML = unmigrated.map(app => {
+      const sev = severityMap[app.priority] || 'medium';
+      return `<div class="break-item">
+        <div class="break-icon severity-${sev}">${iconMap[sev]}</div>
+        <div class="break-content">
+          <strong class="severity-${sev}">${escapeHtml(app.name)}</strong>
+          <span>Not yet migrated (${app.priority}). You will lose access to this service when Facebook login stops working.</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Confirmation modal
+  let pendingAction = null;
+
+  window.showConfirmModal = function(title, message, action) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    pendingAction = action;
+    document.getElementById('confirmModal').classList.remove('hidden');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    pendingAction = null;
+  };
+
+  document.getElementById('modalConfirm').addEventListener('click', () => {
+    if (pendingAction) pendingAction();
+    closeModal();
+  });
+
+  // Close modal on overlay click
+  document.getElementById('confirmModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('confirmModal').classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+
+  // Email template copy
+  window.copyTemplate = function(btn) {
+    const code = btn.previousElementSibling;
+    navigator.clipboard.writeText(code.textContent).then(() => {
+      const original = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1500);
+    });
   };
 
   // App management
@@ -1095,21 +1755,44 @@
   };
 
   window.removeApp = function(id) {
-    state.apps = state.apps.filter(a => a.id !== id);
-    saveState();
-    renderChecklist();
+    const app = state.apps.find(a => a.id === id);
+    const name = app ? app.name : 'this item';
+    showConfirmModal(
+      'Remove Item',
+      `Are you sure you want to remove "${name}" from your checklist? This cannot be undone.`,
+      () => {
+        state.apps = state.apps.filter(a => a.id !== id);
+        saveState();
+        renderChecklist();
+      }
+    );
   };
 
   window.clearCompleted = function() {
-    state.apps = state.apps.filter(a => !a.done);
-    saveState();
-    renderChecklist();
+    const completed = state.apps.filter(a => a.done).length;
+    if (completed === 0) return;
+    showConfirmModal(
+      'Clear Completed Items',
+      `This will permanently remove ${completed} completed item${completed === 1 ? '' : 's'} from your checklist. This cannot be undone.`,
+      () => {
+        state.apps = state.apps.filter(a => !a.done);
+        saveState();
+        renderChecklist();
+      }
+    );
   };
 
   window.clearAll = function() {
-    state.apps = [];
-    saveState();
-    renderChecklist();
+    if (state.apps.length === 0) return;
+    showConfirmModal(
+      'Clear Entire Checklist',
+      `This will permanently remove ALL ${state.apps.length} item${state.apps.length === 1 ? '' : 's'} from your checklist, including incomplete ones. This cannot be undone.`,
+      () => {
+        state.apps = [];
+        saveState();
+        renderChecklist();
+      }
+    );
   };
 
   // Pre-delete checklist
@@ -1129,6 +1812,23 @@
     });
   }
 
+  // Safety backup checklist
+  window.toggleSafety = function(el) {
+    const key = el.dataset.key;
+    state.safety[key] = !state.safety[key];
+    el.classList.toggle('checked', state.safety[key]);
+    saveState();
+    updateProgress();
+  };
+
+  function restoreSafety() {
+    document.querySelectorAll('#safetyChecklist .checklist-item').forEach(item => {
+      if (state.safety[item.dataset.key]) {
+        item.classList.add('checked');
+      }
+    });
+  }
+
   // Progress
   function updateProgress() {
     const appTotal = state.apps.length;
@@ -1136,9 +1836,12 @@
     const pdItems = document.querySelectorAll('#predeleteChecklist .checklist-item');
     const pdTotal = pdItems.length;
     const pdDone = Object.values(state.predelete).filter(Boolean).length;
+    const sfItems = document.querySelectorAll('#safetyChecklist .checklist-item');
+    const sfTotal = sfItems.length;
+    const sfDone = Object.values(state.safety).filter(Boolean).length;
 
-    const total = appTotal + pdTotal;
-    const done = appDone + pdDone;
+    const total = appTotal + pdTotal + sfTotal;
+    const done = appDone + pdDone + sfDone;
     const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
     document.getElementById('progressPct').textContent = pct + '%';
@@ -1158,6 +1861,23 @@
       lines.push(`${check} ${app.name} ${tag}`);
       if (app.notes) lines.push(`    Notes: ${app.notes}`);
     });
+
+    lines.push('', '=== Pre-Deletion Checklist ===');
+    document.querySelectorAll('#predeleteChecklist .checklist-item').forEach(item => {
+      const key = item.dataset.key;
+      const check = state.predelete[key] ? '[x]' : '[ ]';
+      const title = item.querySelector('.item-title').textContent;
+      lines.push(`${check} ${title}`);
+    });
+
+    lines.push('', '=== Safety Backup Checklist ===');
+    document.querySelectorAll('#safetyChecklist .checklist-item').forEach(item => {
+      const key = item.dataset.key;
+      const check = state.safety[key] ? '[x]' : '[ ]';
+      const title = item.querySelector('.item-title').textContent;
+      lines.push(`${check} ${title}`);
+    });
+
     lines.push('', `Exported: ${new Date().toLocaleString()}`);
     showExport(lines.join('\n'));
   };
@@ -1178,10 +1898,109 @@
     navigator.clipboard.writeText(textarea.value);
   };
 
+  // ICS Calendar Export
+  window.exportICS = function() {
+    const events = [];
+    const now = new Date();
+    const priorityDays = { critical: 3, important: 7, optional: 14 };
+
+    state.apps.filter(a => !a.done).forEach((app, i) => {
+      const days = priorityDays[app.priority] || 7;
+      const eventDate = new Date(now.getTime() + (days + i) * 86400000);
+      const dtStart = formatICSDate(eventDate);
+      const dtEnd = formatICSDate(new Date(eventDate.getTime() + 3600000));
+      events.push(
+        'BEGIN:VEVENT\r\n' +
+        'DTSTART:' + dtStart + '\r\n' +
+        'DTEND:' + dtEnd + '\r\n' +
+        'SUMMARY:Migrate: ' + app.name + ' (' + app.priority + ')\r\n' +
+        'DESCRIPTION:Migrate ' + app.name + ' away from Facebook login. ' + (app.notes || '') + '\r\n' +
+        'STATUS:NEEDS-ACTION\r\n' +
+        'END:VEVENT\r\n'
+      );
+    });
+
+    if (events.length === 0) {
+      showExport('No incomplete items to export to calendar.');
+      return;
+    }
+
+    const ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Facebook Exit Guide//EN\r\nCALSCALE:GREGORIAN\r\n' +
+      events.join('') +
+      'END:VCALENDAR\r\n';
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'facebook-exit-migration.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  function formatICSDate(date) {
+    return date.getUTCFullYear() +
+      String(date.getUTCMonth() + 1).padStart(2, '0') +
+      String(date.getUTCDate()).padStart(2, '0') + 'T' +
+      String(date.getUTCHours()).padStart(2, '0') +
+      String(date.getUTCMinutes()).padStart(2, '0') +
+      String(date.getUTCSeconds()).padStart(2, '0') + 'Z';
+  }
+
+  // Regret Buffer (30-day waiting period)
+  window.startRegretBuffer = function() {
+    const endDate = new Date(Date.now() + 30 * 86400000);
+    state.regretBufferEnd = endDate.toISOString();
+    saveState();
+    updateRegretBuffer();
+  };
+
+  window.cancelRegretBuffer = function() {
+    showConfirmModal(
+      'Cancel Waiting Period',
+      'Are you sure you want to cancel the 30-day waiting period?',
+      () => {
+        delete state.regretBufferEnd;
+        saveState();
+        updateRegretBuffer();
+      }
+    );
+  };
+
+  function updateRegretBuffer() {
+    const statusEl = document.getElementById('regretStatus');
+    const activeEl = document.getElementById('regretActive');
+    const countdownEl = document.getElementById('regretCountdown');
+
+    if (!state.regretBufferEnd) {
+      if (statusEl) statusEl.textContent = '';
+      if (activeEl) activeEl.style.display = 'none';
+      return;
+    }
+
+    const endDate = new Date(state.regretBufferEnd);
+    const now = new Date();
+    const daysLeft = Math.ceil((endDate - now) / 86400000);
+
+    if (daysLeft <= 0) {
+      if (statusEl) statusEl.textContent = '';
+      if (activeEl) activeEl.style.display = 'block';
+      if (countdownEl) countdownEl.textContent = 'Your 30-day waiting period is complete. You may proceed with deletion when ready.';
+    } else {
+      if (statusEl) statusEl.textContent = 'Waiting period active';
+      if (activeEl) activeEl.style.display = 'block';
+      if (countdownEl) countdownEl.textContent = daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' remaining (ends ' + endDate.toLocaleDateString() + ')';
+    }
+  }
+
   // Init
   renderChecklist();
   restorePredelete();
+  restoreSafety();
   updateProgress();
+  updateRegretBuffer();
 })();
 </script>
 </body>
