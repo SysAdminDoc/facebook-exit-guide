@@ -5,7 +5,8 @@
     <meta name="theme-color" content="#1e1e2e">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facebook Exit Guide v1.1.0</title>
+<meta name="description" content="Local-first checklist and import tools for migrating apps away from Facebook login before deleting a Facebook account.">
+<title>Facebook Exit Guide v1.2.0</title>
 <style>
   :root {
     --crust: #11111b;
@@ -48,25 +49,32 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
+  body.light {
+    --crust: #f4f6fb;
+    --mantle: #e9edf7;
+    --base: #ffffff;
+    --surface0: #e4e8f2;
+    --surface1: #d4dae8;
+    --surface2: #bac3d4;
+    --overlay0: #6f7890;
+    --overlay1: #576178;
+    --text: #182033;
+    --subtext0: #4f5a70;
+    --subtext1: #334054;
+    --glass: rgba(255, 255, 255, 0.82);
+    --glass-border: rgba(56, 87, 140, 0.18);
+    --shadow: 0 8px 28px rgba(44, 57, 88, 0.16);
+  }
 
-  /* Animated background */
+  /* Subtle static background */
   body::before {
     content: '';
     position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(ellipse at 20% 50%, rgba(137,180,250,0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(203,166,247,0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(166,227,161,0.04) 0%, transparent 50%);
-    animation: bgDrift 20s ease-in-out infinite alternate;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(137,180,250,0.07), transparent 32%),
+                linear-gradient(315deg, rgba(148,226,213,0.05), transparent 38%);
     z-index: 0;
     pointer-events: none;
-  }
-  @keyframes bgDrift {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(-3%, -3%) rotate(2deg); }
   }
 
   .container {
@@ -105,9 +113,61 @@
     margin-top: 10px;
     padding: 3px 10px;
     background: var(--surface0);
-    border-radius: 20px;
+    border-radius: 8px;
     font-size: 0.75rem;
     color: var(--overlay1);
+  }
+  .top-tools {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 0.8fr;
+    gap: 10px;
+    align-items: end;
+    margin: 22px auto 0;
+    max-width: 820px;
+    text-align: left;
+  }
+  .tool-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tool-field label {
+    color: var(--overlay1);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tool-inline {
+    display: flex;
+    gap: 8px;
+  }
+  .select-control,
+  .text-control,
+  .number-control,
+  .file-control,
+  textarea.text-control {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--surface0);
+    border: 1px solid var(--surface1);
+    border-radius: 8px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .select-control:focus,
+  .text-control:focus,
+  .number-control:focus,
+  .file-control:focus,
+  textarea.text-control:focus {
+    border-color: var(--lavender);
+  }
+  textarea.text-control {
+    min-height: 96px;
+    resize: vertical;
   }
 
   /* Progress bar */
@@ -230,7 +290,7 @@
     width: 28px;
     height: 28px;
     background: linear-gradient(135deg, var(--blue), var(--mauve));
-    border-radius: 50%;
+    border-radius: 8px;
     font-size: 0.8rem;
     color: var(--crust);
     font-weight: 700;
@@ -354,6 +414,19 @@
   .tag-critical { background: rgba(243,139,168,0.15); color: var(--red); }
   .tag-important { background: rgba(250,179,135,0.15); color: var(--peach); }
   .tag-optional { background: rgba(137,180,250,0.15); color: var(--blue); }
+  .difficulty-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 6px;
+    margin-left: 6px;
+  }
+  .difficulty-easy { background: rgba(166,227,161,0.15); color: var(--green); }
+  .difficulty-medium { background: rgba(249,226,175,0.15); color: var(--yellow); }
+  .difficulty-hard { background: rgba(250,179,135,0.15); color: var(--peach); }
+  .difficulty-locked { background: rgba(243,139,168,0.15); color: var(--red); }
 
   /* Custom app entry */
   .add-app-row {
@@ -414,6 +487,112 @@
     gap: 10px;
     margin-top: 16px;
     flex-wrap: wrap;
+  }
+  .utility-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .utility-panel {
+    padding: 16px;
+    background: var(--surface0);
+    border: 1px solid var(--surface1);
+    border-radius: 8px;
+  }
+  .utility-panel h3 {
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+  .status-line {
+    color: var(--overlay1);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+  .candidate-list,
+  .reminder-list,
+  .evidence-list,
+  .difficulty-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .candidate-row,
+  .reminder-row,
+  .evidence-row,
+  .difficulty-row {
+    padding: 12px;
+    background: var(--surface0);
+    border: 1px solid var(--surface1);
+    border-radius: 8px;
+  }
+  .candidate-row strong,
+  .reminder-row strong,
+  .evidence-row strong,
+  .difficulty-row strong {
+    display: block;
+    color: var(--text);
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+  }
+  .candidate-row span,
+  .reminder-row span,
+  .evidence-row span,
+  .difficulty-row span {
+    color: var(--overlay1);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .evidence-thumb {
+    display: block;
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: 8px;
+    border: 1px solid var(--surface1);
+    margin-top: 8px;
+  }
+  .toast-stack {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    display: grid;
+    gap: 10px;
+    z-index: 1200;
+    max-width: min(360px, calc(100vw - 36px));
+  }
+  .toast {
+    padding: 12px 14px;
+    background: var(--base);
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--blue);
+    border-radius: 8px;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    font-size: 0.88rem;
+  }
+  .toast.success { border-left-color: var(--green); }
+  .toast.warning { border-left-color: var(--yellow); }
+  .toast.error { border-left-color: var(--red); }
+  .log-panel {
+    margin-top: 16px;
+  }
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--surface0);
+    color: var(--subtext0);
+    font-size: 0.8rem;
+  }
+  .log-entry:last-child {
+    border-bottom: none;
+  }
+  .log-entry time {
+    color: var(--overlay1);
+    white-space: nowrap;
   }
 
   /* Migration guide expandable */
@@ -493,6 +672,10 @@
     .tab { padding: 8px 14px; font-size: 0.82rem; }
     .container { padding: 12px; }
     .add-app-row { flex-direction: column; }
+    .top-tools,
+    .utility-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* Scrollbar */
@@ -722,7 +905,8 @@
       print-color-adjust: exact;
     }
     .btn, .btn-outline, .btn-sm, .add-app-row, .export-area,
-    .actions-row, .guide-toggle, .modal-overlay, .email-template .btn-copy { display: none !important; }
+    .actions-row, .guide-toggle, .toast-stack, .email-template .btn-copy,
+    .top-tools, .utility-panel input, .utility-panel select, .utility-panel textarea { display: none !important; }
     .progress-bar { border: 1px solid #ccc; }
     .progress-fill {
       background: #333 !important;
@@ -748,33 +932,62 @@
 <div class="container">
   <header class="header">
     <h1>Facebook Exit Guide</h1>
-    <p class="subtitle">A guided walkthrough to identify every app, service, and login tied to your Facebook account — so you can migrate cleanly before deleting it.</p>
-    <span class="version">v1.1.0</span>
+    <p class="subtitle" data-i18n="subtitle">A guided walkthrough to identify every app, service, and login tied to your Facebook account so you can migrate cleanly before deleting it.</p>
+    <span class="version">v1.2.0</span>
+    <div class="top-tools">
+      <div class="tool-field">
+        <label for="profileSelect" data-i18n="profileLabel">Profile</label>
+        <div class="tool-inline">
+          <select class="select-control" id="profileSelect" onchange="switchProfile(this.value)"></select>
+          <button class="btn btn-outline btn-sm" onclick="deleteProfile()" data-i18n="deleteProfileBtn">Delete</button>
+        </div>
+        <div class="tool-inline">
+          <input class="text-control" id="profileNameInput" type="text" data-i18n-placeholder="profileNamePlaceholder" placeholder="Profile name">
+          <button class="btn btn-outline btn-sm" onclick="saveProfileName()" data-i18n="saveProfileBtn">Save</button>
+          <button class="btn btn-outline btn-sm" onclick="addProfile()" data-i18n="addProfileBtn">New</button>
+        </div>
+      </div>
+      <div class="tool-field">
+        <label for="languageSelect" data-i18n="languageLabel">Language</label>
+        <select class="select-control" id="languageSelect" onchange="setLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+      <div class="tool-field">
+        <label for="themeSelect" data-i18n="themeLabel">Theme</label>
+        <select class="select-control" id="themeSelect" onchange="setTheme(this.value)">
+          <option value="dark" data-i18n="themeDark">Dark</option>
+          <option value="light" data-i18n="themeLight">Light</option>
+        </select>
+      </div>
+    </div>
   </header>
 
   <!-- Progress -->
   <div class="progress-container">
     <div class="progress-header">
-      <h3>Migration Progress</h3>
+      <h3 data-i18n="progressTitle">Migration Progress</h3>
       <span class="progress-pct" id="progressPct">0%</span>
     </div>
     <div class="progress-bar">
       <div class="progress-fill" id="progressFill"></div>
     </div>
     <div class="progress-stats">
-      <span><strong id="statCompleted">0</strong> completed</span>
-      <span><strong id="statRemaining">0</strong> remaining</span>
-      <span><strong id="statTotal">0</strong> total items</span>
+      <span><strong id="statCompleted">0</strong> <span data-i18n="completedLabel">completed</span></span>
+      <span><strong id="statRemaining">0</strong> <span data-i18n="remainingLabel">remaining</span></span>
+      <span><strong id="statTotal">0</strong> <span data-i18n="totalLabel">total items</span></span>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" data-tab="discover">Discover Logins</div>
-    <div class="tab" data-tab="common">Common Services</div>
-    <div class="tab" data-tab="my-apps">My Apps Checklist</div>
-    <div class="tab" data-tab="data">Download Data</div>
-    <div class="tab" data-tab="delete">Delete Account</div>
+    <div class="tab active" data-tab="discover" data-i18n="tabDiscover">Discover Logins</div>
+    <div class="tab" data-tab="common" data-i18n="tabCommon">Common Services</div>
+    <div class="tab" data-tab="my-apps" data-i18n="tabApps">My Apps Checklist</div>
+    <div class="tab" data-tab="data" data-i18n="tabData">Download Data</div>
+    <div class="tab" data-tab="delete" data-i18n="tabDelete">Delete Account</div>
   </div>
 
   <!-- TAB: Discover -->
@@ -925,6 +1138,31 @@
         The data download reveals apps you may have forgotten about, including ones you used years ago that might still have your data.
       </div>
     </div>
+
+    <div class="card stagger" style="animation-delay: 0.4s">
+      <h2><span class="step-num">8</span><span data-i18n="importTitle">Import Discovery Files</span></h2>
+      <p data-i18n="importIntro">Import a Facebook data export or password-manager export locally. Files are parsed in this browser only.</p>
+      <div class="utility-grid">
+        <div class="utility-panel">
+          <h3 data-i18n="fbImportTitle">Facebook data export</h3>
+          <input class="file-control" id="fbDataFile" type="file" accept=".zip,.json,application/json,application/zip">
+          <div class="actions-row">
+            <button class="btn btn-sm" onclick="parseFacebookExport()" data-i18n="parseFbBtn">Parse Facebook export</button>
+          </div>
+          <div class="status-line" id="fbImportStatus" data-i18n="fbImportStatus">Choose the ZIP from Download Your Information or an extracted JSON file.</div>
+        </div>
+        <div class="utility-panel">
+          <h3 data-i18n="passwordImportTitle">Password exports</h3>
+          <input class="text-control" id="fbEmailInput" type="email" data-i18n-placeholder="fbEmailPlaceholder" placeholder="Facebook email address">
+          <input class="file-control" id="passwordExportFiles" type="file" multiple accept=".csv,.json,.1pux,.zip,application/json,text/csv">
+          <div class="actions-row">
+            <button class="btn btn-sm" onclick="parsePasswordExports()" data-i18n="parsePasswordsBtn">Flag matching logins</button>
+          </div>
+          <div class="status-line" id="passwordImportStatus" data-i18n="passwordImportStatus">Supports Chrome CSV, Firefox CSV, Bitwarden JSON, and 1Password 1PUX.</div>
+        </div>
+      </div>
+      <div id="importResults" class="candidate-list"></div>
+    </div>
   </div>
 
   <!-- TAB: Common Services -->
@@ -932,6 +1170,17 @@
     <div class="card stagger">
       <h2>Common Services That Use Facebook Login</h2>
       <p>Below are popular categories of apps/services that frequently rely on Facebook login. Check each one to see if you've used it, then add any matches to your checklist.</p>
+    </div>
+
+    <div class="card stagger" style="animation-delay: 0.03s">
+      <h2 data-i18n="communityTitle">Migration Snippets and Difficulty</h2>
+      <p data-i18n="communityIntro">The guide includes built-in migration steps and can merge read-only community snippets from the static JSON catalog.</p>
+      <div class="actions-row">
+        <button class="btn btn-sm" onclick="loadCommunitySnippets()" data-i18n="loadSnippetsBtn">Load community snippets</button>
+        <button class="btn btn-outline btn-sm" onclick="renderDifficultyDirectory(true)" data-i18n="refreshDifficultyBtn">Refresh difficulty list</button>
+      </div>
+      <div class="status-line" id="communityStatus" data-i18n="communityStatus">Built-in catalog loaded.</div>
+      <div id="difficultyDirectory" class="difficulty-list"></div>
     </div>
 
     <div class="card stagger" style="animation-delay: 0.05s">
@@ -1082,6 +1331,47 @@
     <div class="actions-row" id="checklistActions" style="display:none;">
       <button class="btn btn-outline btn-sm" onclick="clearCompleted()">Clear Completed</button>
       <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="reminderTitle">Reminder Center</h2>
+      <p data-i18n="reminderIntro">Schedule local follow-ups for unmigrated services. Browser notifications fire while this page is open; calendar export remains available for system-level reminders.</p>
+      <div class="utility-grid">
+        <div class="utility-panel">
+          <h3 data-i18n="newReminderTitle">New reminder</h3>
+          <select class="select-control" id="reminderAppSelect"></select>
+          <input class="number-control" id="reminderDaysInput" type="number" min="1" max="365" value="7">
+          <div class="actions-row">
+            <button class="btn btn-sm" onclick="scheduleReminder()" data-i18n="scheduleReminderBtn">Schedule</button>
+            <button class="btn btn-outline btn-sm" onclick="requestNotificationAccess()" data-i18n="enableNotificationsBtn">Enable notifications</button>
+          </div>
+        </div>
+        <div class="utility-panel">
+          <h3 data-i18n="activeRemindersTitle">Active reminders</h3>
+          <div id="reminderList" class="reminder-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="evidenceTitle">Evidence Vault</h2>
+      <p data-i18n="evidenceIntro">Store confirmation emails, pasted notes, and screenshots per checklist item in local IndexedDB.</p>
+      <div class="utility-grid">
+        <div class="utility-panel">
+          <h3 data-i18n="addEvidenceTitle">Add evidence</h3>
+          <select class="select-control" id="evidenceAppSelect" onchange="renderEvidenceList()"></select>
+          <textarea class="text-control" id="evidenceText" data-i18n-placeholder="evidencePlaceholder" placeholder="Paste confirmation text or notes"></textarea>
+          <input class="file-control" id="evidenceFile" type="file" accept="image/*">
+          <div class="actions-row">
+            <button class="btn btn-sm" onclick="addEvidenceText()" data-i18n="saveTextEvidenceBtn">Save text</button>
+            <button class="btn btn-outline btn-sm" onclick="addEvidenceFile()" data-i18n="saveImageEvidenceBtn">Save image</button>
+          </div>
+        </div>
+        <div class="utility-panel">
+          <h3 data-i18n="savedEvidenceTitle">Saved evidence</h3>
+          <div id="evidenceList" class="evidence-list"></div>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="emptyState" style="text-align:center; color:var(--overlay1); padding:40px;">
@@ -1431,47 +1721,377 @@
     </div>
   </div>
 
+  <div class="card log-panel">
+    <h2 data-i18n="activityLogTitle">Activity Log</h2>
+    <div id="activityLog"></div>
+  </div>
+
   <footer class="footer">
-    <p>Facebook Exit Guide v1.1.0 &mdash; All data stored locally in your browser. Nothing is sent to any server.</p>
+    <p><span data-i18n="footerProduct">Facebook Exit Guide</span> v1.2.0 &mdash; <span data-i18n="footerPrivacy">All data stored locally in your browser. Nothing is sent to any server.</span></p>
   </footer>
 </div>
 
-<!-- Confirmation Modal -->
-<div class="modal-overlay hidden" id="confirmModal">
-  <div class="modal-box">
-    <h3 id="modalTitle">Are you sure?</h3>
-    <p id="modalMessage">This action cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-danger" id="modalConfirm">Confirm</button>
-    </div>
-  </div>
-</div>
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
 <script>
 (function() {
   'use strict';
 
   const STORAGE_KEY = 'fb-exit-guide';
+  const COMMUNITY_SNIPPETS_URL = 'https://raw.githubusercontent.com/SysAdminDoc/facebook-exit-guide/master/migration-snippets.json';
+  const VAULT_DB = 'fb-exit-guide-vault';
+  const VAULT_STORE = 'evidence';
+  const DIFFICULTY_LIBRARY = {
+    'spotify': { level: 'easy', label: 'Easy', detail: 'Password setup and Facebook unlink are available in account settings.' },
+    'airbnb': { level: 'medium', label: 'Medium', detail: 'Requires login security review and a verified standalone password.' },
+    'uber': { level: 'medium', label: 'Medium', detail: 'Email, phone, and password should be verified before unlinking.' },
+    'uber eats': { level: 'medium', label: 'Medium', detail: 'Shares Uber account security setup.' },
+    'tinder': { level: 'hard', label: 'Hard', detail: 'Match history and login method changes can be fragile.' },
+    'bumble': { level: 'medium', label: 'Medium', detail: 'Phone login is usually available, but verify before unlinking.' },
+    'hinge': { level: 'medium', label: 'Medium', detail: 'Phone login is available for most accounts.' },
+    'pinterest': { level: 'easy', label: 'Easy', detail: 'Email/password setup and social disconnect are straightforward.' },
+    'canva': { level: 'easy', label: 'Easy', detail: 'Account settings support email/password setup.' },
+    'doordash': { level: 'medium', label: 'Medium', detail: 'Verify email and mobile app login before disconnecting.' },
+    'strava': { level: 'easy', label: 'Easy', detail: 'Email/password migration is supported in account settings.' },
+    'facebook marketplace': { level: 'locked', label: 'No migration', detail: 'Listings, ratings, and history are tied to Facebook.' },
+    'facebook messenger': { level: 'locked', label: 'No migration', detail: 'Messenger access ends with Facebook deletion.' },
+    'facebook groups': { level: 'locked', label: 'No migration', detail: 'Group membership and created groups do not transfer.' },
+    'instagram': { level: 'medium', label: 'Medium', detail: 'Independent login is available, but Account Center needs review.' },
+    'whatsapp': { level: 'easy', label: 'Easy', detail: 'Phone-number login is independent from Facebook.' },
+    'discord': { level: 'easy', label: 'Easy', detail: 'Facebook is only a connection, not the primary login.' },
+    'snapchat': { level: 'easy', label: 'Easy', detail: 'Uses email or phone login rather than Facebook.' },
+  };
+  const TRANSLATIONS = {
+    en: {
+      subtitle: 'A guided walkthrough to identify every app, service, and login tied to your Facebook account so you can migrate cleanly before deleting it.',
+      profileLabel: 'Profile',
+      profileNamePlaceholder: 'Profile name',
+      saveProfileBtn: 'Save',
+      addProfileBtn: 'New',
+      deleteProfileBtn: 'Delete',
+      languageLabel: 'Language',
+      themeLabel: 'Theme',
+      themeDark: 'Dark',
+      themeLight: 'Light',
+      progressTitle: 'Migration Progress',
+      completedLabel: 'completed',
+      remainingLabel: 'remaining',
+      totalLabel: 'total items',
+      tabDiscover: 'Discover Logins',
+      tabCommon: 'Common Services',
+      tabApps: 'My Apps Checklist',
+      tabData: 'Download Data',
+      tabDelete: 'Delete Account',
+      importTitle: 'Import Discovery Files',
+      importIntro: 'Import a Facebook data export or password-manager export locally. Files are parsed in this browser only.',
+      fbImportTitle: 'Facebook data export',
+      parseFbBtn: 'Parse Facebook export',
+      fbImportStatus: 'Choose the ZIP from Download Your Information or an extracted JSON file.',
+      passwordImportTitle: 'Password exports',
+      fbEmailPlaceholder: 'Facebook email address',
+      parsePasswordsBtn: 'Flag matching logins',
+      passwordImportStatus: 'Supports Chrome CSV, Firefox CSV, Bitwarden JSON, and 1Password 1PUX.',
+      communityTitle: 'Migration Snippets and Difficulty',
+      communityIntro: 'The guide includes built-in migration steps and can merge read-only community snippets from the static JSON catalog.',
+      loadSnippetsBtn: 'Load community snippets',
+      refreshDifficultyBtn: 'Refresh difficulty list',
+      communityStatus: 'Built-in catalog loaded.',
+      reminderTitle: 'Reminder Center',
+      reminderIntro: 'Schedule local follow-ups for unmigrated services. Browser notifications fire while this page is open; calendar export remains available for system-level reminders.',
+      newReminderTitle: 'New reminder',
+      scheduleReminderBtn: 'Schedule',
+      enableNotificationsBtn: 'Enable notifications',
+      activeRemindersTitle: 'Active reminders',
+      evidenceTitle: 'Evidence Vault',
+      evidenceIntro: 'Store confirmation emails, pasted notes, and screenshots per checklist item in local IndexedDB.',
+      addEvidenceTitle: 'Add evidence',
+      evidencePlaceholder: 'Paste confirmation text or notes',
+      saveTextEvidenceBtn: 'Save text',
+      saveImageEvidenceBtn: 'Save image',
+      savedEvidenceTitle: 'Saved evidence',
+      activityLogTitle: 'Activity Log',
+      footerProduct: 'Facebook Exit Guide',
+      footerPrivacy: 'All data stored locally in your browser. Nothing is sent to any server.',
+      addImportedBtn: 'Add imported items',
+      emptyLog: 'No activity yet.',
+      noAppsForReminder: 'Add checklist items before scheduling reminders.',
+      noEvidence: 'No evidence saved for this item.',
+      noReminders: 'No active reminders.',
+      profileCreated: 'Profile created.',
+      profileDeleted: 'Profile deleted.',
+      profileSaved: 'Profile saved.',
+      itemAdded: 'Checklist item added.',
+      itemRemoved: 'Checklist item removed.',
+      completedCleared: 'Completed items cleared.',
+      allCleared: 'Checklist cleared.',
+      importAdded: 'Imported items added.',
+      notificationEnabled: 'Notifications enabled.',
+      reminderScheduled: 'Reminder scheduled.',
+      reminderDismissed: 'Reminder dismissed.',
+      evidenceSaved: 'Evidence saved.',
+      evidenceDeleted: 'Evidence deleted.',
+      snippetsLoaded: 'Community snippets loaded.',
+      parseError: 'Could not parse that file.',
+      duplicateSkipped: 'Existing checklist items were skipped.'
+    },
+    es: {
+      subtitle: 'Una guía para identificar cada app, servicio e inicio de sesión vinculado a Facebook antes de eliminar la cuenta.',
+      profileLabel: 'Perfil',
+      profileNamePlaceholder: 'Nombre del perfil',
+      saveProfileBtn: 'Guardar',
+      addProfileBtn: 'Nuevo',
+      deleteProfileBtn: 'Eliminar',
+      languageLabel: 'Idioma',
+      themeLabel: 'Tema',
+      themeDark: 'Oscuro',
+      themeLight: 'Claro',
+      progressTitle: 'Progreso de migración',
+      completedLabel: 'completados',
+      remainingLabel: 'pendientes',
+      totalLabel: 'elementos',
+      tabDiscover: 'Descubrir',
+      tabCommon: 'Servicios',
+      tabApps: 'Mis apps',
+      tabData: 'Descargar datos',
+      tabDelete: 'Eliminar cuenta',
+      importTitle: 'Importar archivos',
+      importIntro: 'Importa una exportación de Facebook o de contraseñas localmente. Los archivos se analizan solo en este navegador.',
+      fbImportTitle: 'Exportación de Facebook',
+      parseFbBtn: 'Analizar Facebook',
+      fbImportStatus: 'Elige el ZIP de Descargar tu información o un JSON extraído.',
+      passwordImportTitle: 'Exportaciones de contraseñas',
+      fbEmailPlaceholder: 'Correo de Facebook',
+      parsePasswordsBtn: 'Marcar coincidencias',
+      passwordImportStatus: 'Compatible con Chrome CSV, Firefox CSV, Bitwarden JSON y 1Password 1PUX.',
+      communityTitle: 'Fragmentos y dificultad',
+      communityIntro: 'La guía incluye pasos integrados y puede combinar fragmentos comunitarios desde un catálogo JSON estático.',
+      loadSnippetsBtn: 'Cargar fragmentos',
+      refreshDifficultyBtn: 'Actualizar dificultad',
+      communityStatus: 'Catálogo integrado cargado.',
+      reminderTitle: 'Recordatorios',
+      reminderIntro: 'Programa seguimientos locales. Las notificaciones del navegador se muestran mientras la página está abierta.',
+      newReminderTitle: 'Nuevo recordatorio',
+      scheduleReminderBtn: 'Programar',
+      enableNotificationsBtn: 'Activar notificaciones',
+      activeRemindersTitle: 'Recordatorios activos',
+      evidenceTitle: 'Bóveda de evidencia',
+      evidenceIntro: 'Guarda correos de confirmación, notas pegadas y capturas por elemento en IndexedDB local.',
+      addEvidenceTitle: 'Agregar evidencia',
+      evidencePlaceholder: 'Pega texto de confirmación o notas',
+      saveTextEvidenceBtn: 'Guardar texto',
+      saveImageEvidenceBtn: 'Guardar imagen',
+      savedEvidenceTitle: 'Evidencia guardada',
+      activityLogTitle: 'Registro de actividad',
+      footerProduct: 'Facebook Exit Guide',
+      footerPrivacy: 'Todos los datos se guardan localmente en tu navegador. Nada se envía a un servidor.',
+      addImportedBtn: 'Agregar importados',
+      emptyLog: 'Sin actividad.',
+      noAppsForReminder: 'Agrega elementos antes de programar recordatorios.',
+      noEvidence: 'No hay evidencia para este elemento.',
+      noReminders: 'No hay recordatorios activos.',
+      profileCreated: 'Perfil creado.',
+      profileDeleted: 'Perfil eliminado.',
+      profileSaved: 'Perfil guardado.',
+      itemAdded: 'Elemento agregado.',
+      itemRemoved: 'Elemento eliminado.',
+      completedCleared: 'Completados eliminados.',
+      allCleared: 'Lista limpiada.',
+      importAdded: 'Elementos importados agregados.',
+      notificationEnabled: 'Notificaciones activadas.',
+      reminderScheduled: 'Recordatorio programado.',
+      reminderDismissed: 'Recordatorio descartado.',
+      evidenceSaved: 'Evidencia guardada.',
+      evidenceDeleted: 'Evidencia eliminada.',
+      snippetsLoaded: 'Fragmentos cargados.',
+      parseError: 'No se pudo analizar el archivo.',
+      duplicateSkipped: 'Se omitieron elementos existentes.'
+    },
+    de: {
+      subtitle: 'Eine geführte Prüfung aller Apps, Dienste und Logins, die mit Facebook verbunden sind, bevor das Konto gelöscht wird.',
+      profileLabel: 'Profil',
+      profileNamePlaceholder: 'Profilname',
+      saveProfileBtn: 'Speichern',
+      addProfileBtn: 'Neu',
+      deleteProfileBtn: 'Löschen',
+      languageLabel: 'Sprache',
+      themeLabel: 'Design',
+      themeDark: 'Dunkel',
+      themeLight: 'Hell',
+      progressTitle: 'Migrationsfortschritt',
+      completedLabel: 'erledigt',
+      remainingLabel: 'offen',
+      totalLabel: 'Elemente',
+      tabDiscover: 'Logins finden',
+      tabCommon: 'Dienste',
+      tabApps: 'Meine Apps',
+      tabData: 'Daten laden',
+      tabDelete: 'Konto löschen',
+      importTitle: 'Dateien importieren',
+      importIntro: 'Importiere Facebook- oder Passwortmanager-Exporte lokal. Dateien werden nur in diesem Browser gelesen.',
+      fbImportTitle: 'Facebook-Datenexport',
+      parseFbBtn: 'Facebook analysieren',
+      fbImportStatus: 'Wähle den ZIP-Export oder eine extrahierte JSON-Datei.',
+      passwordImportTitle: 'Passwortexporte',
+      fbEmailPlaceholder: 'Facebook-E-Mail-Adresse',
+      parsePasswordsBtn: 'Treffer markieren',
+      passwordImportStatus: 'Unterstützt Chrome CSV, Firefox CSV, Bitwarden JSON und 1Password 1PUX.',
+      communityTitle: 'Snippets und Schwierigkeit',
+      communityIntro: 'Die Anleitung enthält eingebaute Schritte und kann schreibgeschützte Community-Snippets aus einem statischen JSON-Katalog laden.',
+      loadSnippetsBtn: 'Snippets laden',
+      refreshDifficultyBtn: 'Schwierigkeit aktualisieren',
+      communityStatus: 'Eingebauter Katalog geladen.',
+      reminderTitle: 'Erinnerungen',
+      reminderIntro: 'Plane lokale Nachfass-Erinnerungen. Browser-Benachrichtigungen erscheinen, solange diese Seite geöffnet ist.',
+      newReminderTitle: 'Neue Erinnerung',
+      scheduleReminderBtn: 'Planen',
+      enableNotificationsBtn: 'Benachrichtigungen aktivieren',
+      activeRemindersTitle: 'Aktive Erinnerungen',
+      evidenceTitle: 'Nachweis-Tresor',
+      evidenceIntro: 'Speichere Bestätigungen, Notizen und Screenshots pro Checklisteneintrag lokal in IndexedDB.',
+      addEvidenceTitle: 'Nachweis hinzufügen',
+      evidencePlaceholder: 'Bestätigungstext oder Notizen einfügen',
+      saveTextEvidenceBtn: 'Text speichern',
+      saveImageEvidenceBtn: 'Bild speichern',
+      savedEvidenceTitle: 'Gespeicherte Nachweise',
+      activityLogTitle: 'Aktivitätslog',
+      footerProduct: 'Facebook Exit Guide',
+      footerPrivacy: 'Alle Daten bleiben lokal im Browser. Nichts wird an einen Server gesendet.',
+      addImportedBtn: 'Importe hinzufügen',
+      emptyLog: 'Noch keine Aktivität.',
+      noAppsForReminder: 'Füge Checklisteneinträge hinzu, bevor du Erinnerungen planst.',
+      noEvidence: 'Kein Nachweis für diesen Eintrag.',
+      noReminders: 'Keine aktiven Erinnerungen.',
+      profileCreated: 'Profil erstellt.',
+      profileDeleted: 'Profil gelöscht.',
+      profileSaved: 'Profil gespeichert.',
+      itemAdded: 'Eintrag hinzugefügt.',
+      itemRemoved: 'Eintrag entfernt.',
+      completedCleared: 'Erledigte Einträge entfernt.',
+      allCleared: 'Checkliste geleert.',
+      importAdded: 'Importierte Einträge hinzugefügt.',
+      notificationEnabled: 'Benachrichtigungen aktiviert.',
+      reminderScheduled: 'Erinnerung geplant.',
+      reminderDismissed: 'Erinnerung verworfen.',
+      evidenceSaved: 'Nachweis gespeichert.',
+      evidenceDeleted: 'Nachweis gelöscht.',
+      snippetsLoaded: 'Community-Snippets geladen.',
+      parseError: 'Datei konnte nicht analysiert werden.',
+      duplicateSkipped: 'Vorhandene Einträge wurden übersprungen.'
+    }
+  };
+  let communityGuides = {};
+  let importCandidates = [];
 
   // State
   let state = loadState();
 
+  function makeId(prefix = 'id') {
+    return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function defaultProfile(name = 'Me') {
+    return {
+      id: makeId('profile'),
+      name,
+      apps: [],
+      predelete: {},
+      safety: {},
+      reminders: [],
+      regretBufferEnd: null
+    };
+  }
+
   function defaultState() {
-    return { apps: [], predelete: {}, safety: {} };
+    const profile = defaultProfile();
+    return {
+      profiles: [profile],
+      activeProfileId: profile.id,
+      language: 'en',
+      theme: 'dark',
+      activityLog: [],
+      apps: profile.apps,
+      predelete: profile.predelete,
+      safety: profile.safety,
+      reminders: profile.reminders,
+      regretBufferEnd: profile.regretBufferEnd
+    };
   }
 
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const s = raw ? JSON.parse(raw) : defaultState();
-      if (!s.safety) s.safety = {};
-      return s;
+      return bindActiveProfile(migrateState(s));
     } catch { return defaultState(); }
   }
 
+  function migrateState(s) {
+    if (!s || typeof s !== 'object') return defaultState();
+
+    if (!Array.isArray(s.profiles)) {
+      const profile = defaultProfile(s.profileName || 'Me');
+      profile.apps = Array.isArray(s.apps) ? s.apps : [];
+      profile.predelete = s.predelete && typeof s.predelete === 'object' ? s.predelete : {};
+      profile.safety = s.safety && typeof s.safety === 'object' ? s.safety : {};
+      profile.reminders = Array.isArray(s.reminders) ? s.reminders : [];
+      profile.regretBufferEnd = s.regretBufferEnd || null;
+      s = {
+        profiles: [profile],
+        activeProfileId: profile.id,
+        language: s.language || 'en',
+        theme: s.theme || 'dark',
+        activityLog: Array.isArray(s.activityLog) ? s.activityLog : []
+      };
+    }
+
+    s.profiles = s.profiles.map((profile, index) => ({
+      id: profile.id || makeId('profile'),
+      name: profile.name || (index === 0 ? 'Me' : 'Profile ' + (index + 1)),
+      apps: Array.isArray(profile.apps) ? profile.apps : [],
+      predelete: profile.predelete && typeof profile.predelete === 'object' ? profile.predelete : {},
+      safety: profile.safety && typeof profile.safety === 'object' ? profile.safety : {},
+      reminders: Array.isArray(profile.reminders) ? profile.reminders : [],
+      regretBufferEnd: profile.regretBufferEnd || null
+    }));
+
+    if (s.profiles.length === 0) s.profiles.push(defaultProfile());
+    if (!s.profiles.some(profile => profile.id === s.activeProfileId)) {
+      s.activeProfileId = s.profiles[0].id;
+    }
+    if (!TRANSLATIONS[s.language]) s.language = 'en';
+    if (!['dark', 'light'].includes(s.theme)) s.theme = 'dark';
+    if (!Array.isArray(s.activityLog)) s.activityLog = [];
+    return s;
+  }
+
+  function activeProfile() {
+    return state.profiles.find(profile => profile.id === state.activeProfileId) || state.profiles[0];
+  }
+
+  function bindActiveProfile(s = state) {
+    const profile = s.profiles.find(p => p.id === s.activeProfileId) || s.profiles[0];
+    s.activeProfileId = profile.id;
+    s.apps = profile.apps;
+    s.predelete = profile.predelete;
+    s.safety = profile.safety;
+    s.reminders = profile.reminders;
+    s.regretBufferEnd = profile.regretBufferEnd;
+    return s;
+  }
+
+  function syncActiveProfile() {
+    const profile = activeProfile();
+    profile.apps = state.apps;
+    profile.predelete = state.predelete;
+    profile.safety = state.safety;
+    profile.reminders = state.reminders;
+    profile.regretBufferEnd = state.regretBufferEnd || null;
+  }
+
   function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    syncActiveProfile();
+    const { apps, predelete, safety, reminders, regretBufferEnd, ...persisted } = state;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   }
 
   // Tabs
@@ -1483,6 +2103,143 @@
       document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
     });
   });
+
+  function t(key) {
+    return (TRANSLATIONS[state.language] && TRANSLATIONS[state.language][key]) || TRANSLATIONS.en[key] || key;
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = state.language;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (t(key)) el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      if (t(key)) el.placeholder = t(key);
+    });
+    const select = document.getElementById('languageSelect');
+    if (select) select.value = state.language;
+  }
+
+  window.setLanguage = function(language) {
+    state.language = TRANSLATIONS[language] ? language : 'en';
+    saveState();
+    applyLanguage();
+    renderChecklist();
+    renderReminders();
+    renderEvidenceList();
+    renderActivityLog();
+    renderDifficultyDirectory();
+  };
+
+  function applyTheme() {
+    document.body.classList.toggle('light', state.theme === 'light');
+    const select = document.getElementById('themeSelect');
+    if (select) select.value = state.theme;
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = state.theme === 'light' ? '#f4f6fb' : '#1e1e2e';
+  }
+
+  window.setTheme = function(theme) {
+    state.theme = theme === 'light' ? 'light' : 'dark';
+    saveState();
+    applyTheme();
+    notify(state.theme === 'light' ? 'Light theme enabled.' : 'Dark theme enabled.', 'success');
+  };
+
+  function renderProfileControls() {
+    const select = document.getElementById('profileSelect');
+    const input = document.getElementById('profileNameInput');
+    if (!select || !input) return;
+    select.innerHTML = state.profiles.map(profile =>
+      `<option value="${profile.id}" ${profile.id === state.activeProfileId ? 'selected' : ''}>${escapeHtml(profile.name)}</option>`
+    ).join('');
+    input.value = activeProfile().name;
+  }
+
+  window.switchProfile = function(id) {
+    saveState();
+    if (!state.profiles.some(profile => profile.id === id)) return;
+    state.activeProfileId = id;
+    bindActiveProfile();
+    saveState();
+    restoreChecklistState();
+    renderAll();
+    notify('Profile switched.', 'success');
+  };
+
+  window.addProfile = function() {
+    saveState();
+    const profile = defaultProfile('Profile ' + (state.profiles.length + 1));
+    state.profiles.push(profile);
+    state.activeProfileId = profile.id;
+    bindActiveProfile();
+    saveState();
+    renderAll();
+    notify(t('profileCreated'), 'success');
+  };
+
+  window.saveProfileName = function() {
+    const input = document.getElementById('profileNameInput');
+    const name = (input && input.value.trim()) || activeProfile().name;
+    activeProfile().name = name;
+    saveState();
+    renderProfileControls();
+    notify(t('profileSaved'), 'success');
+  };
+
+  window.deleteProfile = function() {
+    if (state.profiles.length <= 1) {
+      notify('Keep at least one profile.', 'warning');
+      return;
+    }
+    const removedId = state.activeProfileId;
+    state.profiles = state.profiles.filter(profile => profile.id !== removedId);
+    state.activeProfileId = state.profiles[0].id;
+    bindActiveProfile();
+    saveState();
+    restoreChecklistState();
+    renderAll();
+    notify(t('profileDeleted'), 'warning');
+  };
+
+  function notify(message, type = 'success') {
+    const stack = document.getElementById('toastStack');
+    if (stack) {
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      toast.textContent = message;
+      stack.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+    state.activityLog = [{ id: makeId('log'), message, type, at: new Date().toISOString() }, ...state.activityLog].slice(0, 80);
+    saveState();
+    renderActivityLog();
+  }
+
+  function renderActivityLog() {
+    const el = document.getElementById('activityLog');
+    if (!el) return;
+    if (!state.activityLog.length) {
+      el.innerHTML = `<div class="status-line">${t('emptyLog')}</div>`;
+      return;
+    }
+    el.innerHTML = state.activityLog.slice(0, 10).map(entry => `
+      <div class="log-entry">
+        <span>${escapeHtml(entry.message)}</span>
+        <time>${new Date(entry.at).toLocaleTimeString()}</time>
+      </div>
+    `).join('');
+  }
+
+  function restoreChecklistState() {
+    document.querySelectorAll('#predeleteChecklist .checklist-item, #safetyChecklist .checklist-item').forEach(item => {
+      item.classList.remove('checked');
+    });
+    restorePredelete();
+    restoreSafety();
+  }
 
   // Checklist rendering
   function renderChecklist() {
