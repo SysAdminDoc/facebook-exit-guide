@@ -528,6 +528,26 @@
     border: 1px solid var(--surface1);
     border-radius: 8px;
   }
+  .candidate-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .candidate-row input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin-top: 3px;
+    accent-color: var(--blue);
+  }
+  .candidate-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .candidate-copy small {
+    display: block;
+    color: var(--overlay1);
+    font-size: 0.74rem;
+    margin-top: 4px;
+  }
   .candidate-row strong,
   .reminder-row strong,
   .evidence-row strong,
@@ -1733,6 +1753,17 @@
 
 <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
+<div class="modal-overlay hidden" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box">
+    <h3 id="modalTitle">Confirm action</h3>
+    <p id="modalMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="modalConfirm">Confirm</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   'use strict';
@@ -2233,6 +2264,623 @@
     `).join('');
   }
 
+  // Local reminders
+  function renderReminderAppSelect() {
+    const select = document.getElementById('reminderAppSelect');
+    if (!select) return;
+    const previous = select.value;
+    const available = state.apps.filter(app => !app.done);
+    select.innerHTML = available.length
+      ? available.map(app => `<option value="${escapeHtml(app.id)}">${escapeHtml(app.name)}</option>`).join('')
+      : `<option value="">${escapeHtml(t('noAppsForReminder'))}</option>`;
+    if (available.some(app => app.id === previous)) select.value = previous;
+  }
+
+  function formatReminderDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleString();
+  }
+
+  function isReminderDue(reminder) {
+    return new Date(reminder.dueAt).getTime() <= Date.now();
+  }
+
+  function renderReminders() {
+    const list = document.getElementById('reminderList');
+    if (!list) return;
+    renderReminderAppSelect();
+    const reminders = [...state.reminders].sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
+    if (!reminders.length) {
+      list.innerHTML = `<div class="status-line">${escapeHtml(t('noReminders'))}</div>`;
+      return;
+    }
+    list.innerHTML = reminders.map(reminder => {
+      const app = state.apps.find(item => item.id === reminder.appId);
+      const due = isReminderDue(reminder);
+      return `<div class="reminder-row">
+        <strong>${escapeHtml(app?.name || reminder.appName || 'Removed app')}</strong>
+        <span>${due ? 'Due now' : 'Due'}: ${escapeHtml(formatReminderDate(reminder.dueAt))}</span>
+        <div class="actions-row" style="margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="dismissReminder('${escapeHtml(reminder.id)}')">Dismiss</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function announceDueReminders() {
+    let changed = false;
+    state.reminders.forEach(reminder => {
+      if (!isReminderDue(reminder) || reminder.notifiedAt) return;
+      const app = state.apps.find(item => item.id === reminder.appId);
+      const title = 'Facebook Exit Guide reminder';
+      const body = `Follow up on ${app?.name || reminder.appName || 'an unmigrated service'}.`;
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try { new Notification(title, { body }); } catch { /* Some browsers block notifications in a background tab. */ }
+      }
+      reminder.notifiedAt = new Date().toISOString();
+      changed = true;
+    });
+    if (changed) {
+      saveState();
+      renderReminders();
+    }
+  }
+
+  window.requestNotificationAccess = async function() {
+    if (typeof Notification === 'undefined') {
+      notify('Browser notifications are not supported here. Use calendar export instead.', 'warning');
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      notify(permission === 'granted' ? t('notificationEnabled') : 'Notification permission was not granted.', permission === 'granted' ? 'success' : 'warning');
+    } catch {
+      notify('Could not request notification permission. Use calendar export instead.', 'warning');
+    }
+  };
+
+  window.scheduleReminder = function() {
+    const appId = document.getElementById('reminderAppSelect')?.value;
+    const days = Math.min(365, Math.max(1, Number(document.getElementById('reminderDaysInput')?.value) || 7));
+    const app = state.apps.find(item => item.id === appId);
+    if (!app) {
+      notify(t('noAppsForReminder'), 'warning');
+      return;
+    }
+    state.reminders.push({
+      id: makeId('reminder'),
+      appId: app.id,
+      appName: app.name,
+      dueAt: new Date(Date.now() + days * 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      notifiedAt: null
+    });
+    saveState();
+    renderReminders();
+    notify(t('reminderScheduled'), 'success');
+  };
+
+  window.dismissReminder = function(id) {
+    const reminder = state.reminders.find(item => item.id === id);
+    if (!reminder) return;
+    state.reminders = state.reminders.filter(item => item.id !== id);
+    saveState();
+    renderReminders();
+    notify(t('reminderDismissed'), 'success');
+  };
+
+  // IndexedDB evidence vault
+  let vaultDbPromise = null;
+  let evidenceRenderToken = 0;
+
+  function openVault() {
+    if (vaultDbPromise) return vaultDbPromise;
+    if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is not available in this browser.'));
+    vaultDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(VAULT_DB, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        const store = db.objectStoreNames.contains(VAULT_STORE)
+          ? request.transaction.objectStore(VAULT_STORE)
+          : db.createObjectStore(VAULT_STORE, { keyPath: 'id' });
+        if (!store.indexNames.contains('profileId')) store.createIndex('profileId', 'profileId', { unique: false });
+        if (!store.indexNames.contains('profileAppId')) store.createIndex('profileAppId', ['profileId', 'appId'], { unique: false });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Could not open the evidence vault.'));
+    });
+    return vaultDbPromise;
+  }
+
+  function readEvidenceForApp(profileId, appId) {
+    return openVault().then(db => new Promise((resolve, reject) => {
+      const request = db.transaction(VAULT_STORE, 'readonly').objectStore(VAULT_STORE).getAll();
+      request.onsuccess = () => resolve(request.result.filter(item => item.profileId === profileId && item.appId === appId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      request.onerror = () => reject(request.error || new Error('Could not read evidence.'));
+    }));
+  }
+
+  function writeEvidence(item) {
+    return openVault().then(db => new Promise((resolve, reject) => {
+      const request = db.transaction(VAULT_STORE, 'readwrite').objectStore(VAULT_STORE).put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error || new Error('Could not save evidence.'));
+    }));
+  }
+
+  function removeEvidence(id) {
+    return openVault().then(db => new Promise((resolve, reject) => {
+      const request = db.transaction(VAULT_STORE, 'readwrite').objectStore(VAULT_STORE).delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error || new Error('Could not delete evidence.'));
+    }));
+  }
+
+  function renderEvidenceAppSelect() {
+    const select = document.getElementById('evidenceAppSelect');
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = state.apps.length
+      ? state.apps.map(app => `<option value="${escapeHtml(app.id)}">${escapeHtml(app.name)}</option>`).join('')
+      : '<option value="">Add a checklist item first</option>';
+    if (state.apps.some(app => app.id === previous)) select.value = previous;
+  }
+
+  window.renderEvidenceList = async function() {
+    const list = document.getElementById('evidenceList');
+    if (!list) return;
+    renderEvidenceAppSelect();
+    const appId = document.getElementById('evidenceAppSelect')?.value;
+    const profileId = activeProfile().id;
+    const token = ++evidenceRenderToken;
+    if (!appId) {
+      list.innerHTML = `<div class="status-line">${escapeHtml(t('noEvidence'))}</div>`;
+      return;
+    }
+    list.innerHTML = '<div class="status-line">Loading evidence…</div>';
+    try {
+      const entries = await readEvidenceForApp(profileId, appId);
+      if (token !== evidenceRenderToken || activeProfile().id !== profileId) return;
+      if (!entries.length) {
+        list.innerHTML = `<div class="status-line">${escapeHtml(t('noEvidence'))}</div>`;
+        return;
+      }
+      list.innerHTML = entries.map(entry => {
+        const content = entry.kind === 'image'
+          ? `<img class="evidence-thumb" src="${escapeHtml(entry.data)}" alt="Saved evidence screenshot">`
+          : `<span>${escapeHtml(entry.data)}</span>`;
+        return `<div class="evidence-row">
+          <strong>${entry.kind === 'image' ? 'Screenshot' : 'Note'}</strong>
+          ${content}
+          <small style="display:block;color:var(--overlay1);margin-top:8px;">${escapeHtml(new Date(entry.createdAt).toLocaleString())}</small>
+          <div class="actions-row" style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="deleteEvidence('${escapeHtml(entry.id)}')">Delete</button></div>
+        </div>`;
+      }).join('');
+    } catch (error) {
+      list.innerHTML = `<div class="status-line">${escapeHtml(error.message || 'Could not load evidence.')}</div>`;
+    }
+  };
+
+  window.addEvidenceText = async function() {
+    const appId = document.getElementById('evidenceAppSelect')?.value;
+    const text = document.getElementById('evidenceText')?.value.trim();
+    const app = state.apps.find(item => item.id === appId);
+    if (!app || !text) return;
+    try {
+      await writeEvidence({ id: makeId('evidence'), profileId: activeProfile().id, appId: app.id, kind: 'text', data: text, createdAt: new Date().toISOString() });
+      document.getElementById('evidenceText').value = '';
+      await renderEvidenceList();
+      notify(t('evidenceSaved'), 'success');
+    } catch (error) {
+      notify(error.message || 'Could not save evidence.', 'error');
+    }
+  };
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('Could not read image.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  window.addEvidenceFile = async function() {
+    const appId = document.getElementById('evidenceAppSelect')?.value;
+    const file = document.getElementById('evidenceFile')?.files[0];
+    const app = state.apps.find(item => item.id === appId);
+    if (!app || !file) return;
+    if (!file.type.startsWith('image/')) {
+      notify('Choose an image file for screenshot evidence.', 'warning');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      notify('Images must be 10 MB or smaller.', 'warning');
+      return;
+    }
+    try {
+      const data = await readFileAsDataUrl(file);
+      await writeEvidence({ id: makeId('evidence'), profileId: activeProfile().id, appId: app.id, kind: 'image', data, name: file.name, createdAt: new Date().toISOString() });
+      document.getElementById('evidenceFile').value = '';
+      await renderEvidenceList();
+      notify(t('evidenceSaved'), 'success');
+    } catch (error) {
+      notify(error.message || 'Could not save evidence.', 'error');
+    }
+  };
+
+  window.deleteEvidence = async function(id) {
+    try {
+      await removeEvidence(id);
+      await renderEvidenceList();
+      notify(t('evidenceDeleted'), 'success');
+    } catch (error) {
+      notify(error.message || 'Could not delete evidence.', 'error');
+    }
+  };
+
+  // Local discovery import helpers
+  const MAX_IMPORT_FILE_BYTES = 100 * 1024 * 1024;
+  const MAX_IMPORT_TEXT_BYTES = 40 * 1024 * 1024;
+
+  function fileExtension(fileName) {
+    const match = String(fileName || '').toLowerCase().match(/(\.[a-z0-9]+)$/);
+    return match ? match[1] : '';
+  }
+
+  function normaliseEmail(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function serviceNameFromUrl(value) {
+    if (!value) return '';
+    try {
+      const url = new URL(value.includes('://') ? value : 'https://' + value);
+      const host = url.hostname.replace(/^www\./i, '');
+      const parts = host.split('.').filter(Boolean);
+      if (parts.length < 2) return host;
+      const name = parts[parts.length - 2];
+      return name ? name.charAt(0).toUpperCase() + name.slice(1) : host;
+    } catch {
+      return '';
+    }
+  }
+
+  function cleanCandidateName(value) {
+    const name = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!name || name.length > 160 || /^(unknown|null|undefined|n\/a|facebook)$/i.test(name)) return '';
+    return name;
+  }
+
+  function candidateKey(name) {
+    return cleanCandidateName(name).toLowerCase();
+  }
+
+  function mergeImportCandidates(candidates) {
+    const merged = [...importCandidates];
+    const seen = new Set(merged.map(candidate => candidateKey(candidate.name)).filter(Boolean));
+    candidates.forEach(candidate => {
+      const name = cleanCandidateName(candidate.name);
+      if (!name || seen.has(candidateKey(name))) return;
+      seen.add(candidateKey(name));
+      merged.push({
+        name,
+        source: candidate.source || 'Import',
+        detail: candidate.detail || ''
+      });
+    });
+    importCandidates = merged;
+  }
+
+  function setImportStatus(id, message, type = '') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.dataset.status = type;
+  }
+
+  function findZipSignature(bytes, signature, startAt) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (let i = Math.min(startAt, bytes.length - 4); i >= 0; i -= 1) {
+      if (view.getUint32(i, true) === signature) return i;
+    }
+    return -1;
+  }
+
+  async function inflateZipEntry(bytes) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('This browser cannot decompress ZIP entries.');
+    }
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    const output = new Uint8Array(await new Response(stream).arrayBuffer());
+    if (output.byteLength > MAX_IMPORT_TEXT_BYTES) throw new Error('ZIP entry is too large to parse safely.');
+    return output;
+  }
+
+  async function readZipTextEntries(file) {
+    if (file.size > MAX_IMPORT_FILE_BYTES) throw new Error('Import file is larger than 100 MB.');
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const endOfCentralDirectory = findZipSignature(bytes, 0x06054b50, bytes.length - 22);
+    if (endOfCentralDirectory < 0) throw new Error('ZIP end record was not found.');
+
+    const entryCount = view.getUint16(endOfCentralDirectory + 10, true);
+    const centralDirectoryOffset = view.getUint32(endOfCentralDirectory + 16, true);
+    const decoder = new TextDecoder();
+    const entries = [];
+    let cursor = centralDirectoryOffset;
+    let textBytesRead = 0;
+
+    for (let index = 0; index < entryCount; index += 1) {
+      if (view.getUint32(cursor, true) !== 0x02014b50) break;
+      const compression = view.getUint16(cursor + 10, true);
+      const compressedSize = view.getUint32(cursor + 20, true);
+      const fileNameLength = view.getUint16(cursor + 28, true);
+      const extraLength = view.getUint16(cursor + 30, true);
+      const commentLength = view.getUint16(cursor + 32, true);
+      const localHeaderOffset = view.getUint32(cursor + 42, true);
+      const nameStart = cursor + 46;
+      const name = decoder.decode(bytes.slice(nameStart, nameStart + fileNameLength));
+      cursor = nameStart + fileNameLength + extraLength + commentLength;
+      if (name.endsWith('/') || (!/\.(json|csv|txt|data)$/i.test(name) && !/export\.data$/i.test(name))) continue;
+
+      if (view.getUint32(localHeaderOffset, true) !== 0x04034b50) continue;
+      const localNameLength = view.getUint16(localHeaderOffset + 26, true);
+      const localExtraLength = view.getUint16(localHeaderOffset + 28, true);
+      const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
+      const compressed = bytes.slice(dataStart, dataStart + compressedSize);
+      let uncompressed;
+      if (compression === 0) {
+        uncompressed = compressed;
+      } else if (compression === 8) {
+        uncompressed = await inflateZipEntry(compressed);
+      } else {
+        continue;
+      }
+      textBytesRead += uncompressed.byteLength;
+      if (textBytesRead > MAX_IMPORT_TEXT_BYTES) throw new Error('ZIP contents are too large to parse safely.');
+      entries.push({ name, text: decoder.decode(uncompressed) });
+    }
+    return entries;
+  }
+
+  function parseCsvRows(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let quoted = false;
+    const input = String(text || '').replace(/^\uFEFF/, '');
+    const firstLine = input.split(/\r?\n/, 1)[0] || '';
+    const delimiter = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
+    for (let i = 0; i < input.length; i += 1) {
+      const char = input[i];
+      if (quoted) {
+        if (char === '"' && input[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          field += char;
+        }
+      } else if (char === '"') {
+        quoted = true;
+      } else if (char === delimiter) {
+        row.push(field.trim());
+        field = '';
+      } else if (char === '\n' || char === '\r') {
+        if (char === '\r' && input[i + 1] === '\n') i += 1;
+        row.push(field.trim());
+        if (row.some(value => value)) rows.push(row);
+        row = [];
+        field = '';
+      } else {
+        field += char;
+      }
+    }
+    if (field || row.length) {
+      row.push(field.trim());
+      if (row.some(value => value)) rows.push(row);
+    }
+    return rows;
+  }
+
+  function valueByKey(record, patterns) {
+    const entries = Object.entries(record || {});
+    for (const pattern of patterns) {
+      const match = entries.find(([key, value]) => pattern.test(key) && typeof value === 'string' && value.trim());
+      if (match) return match[1].trim();
+    }
+    return '';
+  }
+
+  function passwordCandidatesFromCsv(text, email, source) {
+    const rows = parseCsvRows(text);
+    if (rows.length < 2) return [];
+    const headers = rows[0].map(header => header.toLowerCase().replace(/^\uFEFF/, '').trim());
+    return rows.slice(1).map(row => {
+      const record = Object.fromEntries(headers.map((header, index) => [header, row[index] || '']));
+      const username = valueByKey(record, [/^username$/, /user.?name/, /^email$/, /login.?email/]);
+      if (normaliseEmail(username) !== email) return null;
+      const url = valueByKey(record, [/^url$/, /^uri$/, /origin/, /website/, /site/]);
+      const name = valueByKey(record, [/^name$/, /^title$/, /site/, /host/]) || serviceNameFromUrl(url);
+      return name ? { name, source, detail: url || 'Matching username' } : null;
+    }).filter(Boolean);
+  }
+
+  function passwordCandidatesFromJson(value, email, source, inherited = {}, output = []) {
+    if (Array.isArray(value)) {
+      value.forEach(item => passwordCandidatesFromJson(item, email, source, inherited, output));
+      return output;
+    }
+    if (!value || typeof value !== 'object') return output;
+
+    const title = valueByKey(value, [/^title$/, /^name$/, /overview.*title/]) || inherited.title || '';
+    const url = valueByKey(value, [/^url$/, /^uri$/, /login.?uri/, /^location$/, /website/, /hostname/]) || inherited.url || '';
+    const userValues = [];
+    Object.entries(value).forEach(([key, child]) => {
+      if (typeof child === 'string' && /(user.?name|email|login.?user|sign.?in)/i.test(key)) userValues.push(child);
+    });
+    const fields = Array.isArray(value.fields) ? value.fields : [];
+    fields.forEach(field => {
+      if (!field || typeof field !== 'object') return;
+      const label = [field.label, field.name, field.designation, field.id].filter(Boolean).join(' ');
+      if (/(user.?name|email|login|sign.?in)/i.test(label) && typeof field.value === 'string') userValues.push(field.value);
+    });
+    if (userValues.some(candidate => normaliseEmail(candidate) === email)) {
+      const name = cleanCandidateName(title) || serviceNameFromUrl(url) || 'Saved login';
+      output.push({ name, source, detail: url || 'Matching username' });
+    }
+
+    const nextContext = { title: title || inherited.title || '', url: url || inherited.url || '' };
+    Object.values(value).forEach(child => {
+      if (child && typeof child === 'object') passwordCandidatesFromJson(child, email, source, nextContext, output);
+    });
+    return output;
+  }
+
+  function collectFacebookAppNames(value, output = []) {
+    if (Array.isArray(value)) {
+      value.forEach(item => collectFacebookAppNames(item, output));
+      return output;
+    }
+    if (!value || typeof value !== 'object') return output;
+    Object.entries(value).forEach(([key, child]) => {
+      if (typeof child === 'string' && /^(name|app.?name|business.?name|website.?name|title)$/i.test(key)) {
+        const name = cleanCandidateName(child);
+        if (name) output.push(name);
+      } else if (typeof child === 'string' && /^(url|uri|website)$/i.test(key)) {
+        const name = serviceNameFromUrl(child);
+        if (name) output.push(name);
+      }
+      if (child && typeof child === 'object') collectFacebookAppNames(child, output);
+    });
+    return output;
+  }
+
+  function dedupeCandidates(candidates) {
+    const seen = new Set();
+    return candidates.filter(candidate => {
+      const key = candidateKey(candidate.name);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function renderImportCandidates() {
+    const el = document.getElementById('importResults');
+    if (!el) return;
+    if (!importCandidates.length) {
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML = `
+      <div class="actions-row">
+        <button class="btn btn-sm" onclick="addImportedItems()">${escapeHtml(t('addImportedBtn'))}</button>
+      </div>
+      ${importCandidates.map((candidate, index) => `
+        <label class="candidate-row">
+          <input type="checkbox" class="import-check" data-index="${index}" checked>
+          <span class="candidate-copy">
+            <strong>${escapeHtml(candidate.name)}</strong>
+            <small>${escapeHtml(candidate.source)}${candidate.detail ? ' · ' + escapeHtml(candidate.detail) : ''}</small>
+          </span>
+        </label>
+      `).join('')}`;
+  }
+
+  window.addImportedItems = function() {
+    const selected = [...document.querySelectorAll('.import-check:checked')]
+      .map(input => importCandidates[Number(input.dataset.index)])
+      .filter(Boolean);
+    if (!selected.length) return;
+    const existing = new Set(state.apps.map(app => candidateKey(app.name)));
+    let added = 0;
+    selected.forEach(candidate => {
+      const key = candidateKey(candidate.name);
+      if (!key || existing.has(key)) return;
+      existing.add(key);
+      state.apps.push({ id: makeId('app'), name: candidate.name, priority: 'important', notes: candidate.detail ? `${candidate.source}: ${candidate.detail}` : candidate.source, done: false });
+      added += 1;
+    });
+    importCandidates = importCandidates.filter(candidate => !selected.includes(candidate));
+    saveState();
+    renderChecklist();
+    renderImportCandidates();
+    notify(added ? `${t('importAdded')} (${added})` : t('duplicateSkipped'), added ? 'success' : 'warning');
+  };
+
+  window.parseFacebookExport = async function() {
+    const input = document.getElementById('fbDataFile');
+    const file = input && input.files[0];
+    if (!file) {
+      setImportStatus('fbImportStatus', 'Choose a ZIP or JSON file first.', 'warning');
+      return;
+    }
+    setImportStatus('fbImportStatus', 'Reading the export locally…');
+    try {
+      let names = [];
+      if (fileExtension(file.name) === '.zip') {
+        const entries = await readZipTextEntries(file);
+        entries.filter(entry => /apps.?and.?websites|off.?facebook/i.test(entry.name)).forEach(entry => {
+          try { names = names.concat(collectFacebookAppNames(JSON.parse(entry.text))); } catch { /* Ignore unrelated text files. */ }
+        });
+        if (!names.length) {
+          entries.filter(entry => /\.json$/i.test(entry.name)).forEach(entry => {
+            try { names = names.concat(collectFacebookAppNames(JSON.parse(entry.text))); } catch { /* Ignore unrelated JSON. */ }
+          });
+        }
+      } else {
+        names = collectFacebookAppNames(JSON.parse(await file.text()));
+      }
+      const candidates = dedupeCandidates(names.map(name => ({ name, source: 'Facebook data export' })));
+      mergeImportCandidates(candidates);
+      renderImportCandidates();
+      setImportStatus('fbImportStatus', candidates.length ? `${candidates.length} app${candidates.length === 1 ? '' : 's'} found. Review them below.` : 'No connected app names were found in that export.', candidates.length ? 'success' : 'warning');
+    } catch (error) {
+      setImportStatus('fbImportStatus', `${t('parseError')} ${error.message || ''}`.trim(), 'error');
+    }
+  };
+
+  window.parsePasswordExports = async function() {
+    const input = document.getElementById('passwordExportFiles');
+    const email = normaliseEmail(document.getElementById('fbEmailInput')?.value);
+    const files = input ? [...input.files] : [];
+    if (!email || !email.includes('@')) {
+      setImportStatus('passwordImportStatus', 'Enter the email address used for Facebook first.', 'warning');
+      return;
+    }
+    if (!files.length) {
+      setImportStatus('passwordImportStatus', 'Choose one or more password export files first.', 'warning');
+      return;
+    }
+    setImportStatus('passwordImportStatus', 'Reading password exports locally…');
+    try {
+      let candidates = [];
+      for (const file of files) {
+        const extension = fileExtension(file.name);
+        const source = file.name || 'Password export';
+        if (extension === '.csv') {
+          candidates = candidates.concat(passwordCandidatesFromCsv(await file.text(), email, source));
+        } else if (extension === '.json') {
+          candidates = candidates.concat(passwordCandidatesFromJson(JSON.parse(await file.text()), email, source));
+        } else if (extension === '.1pux' || extension === '.zip') {
+          const entries = await readZipTextEntries(file);
+          for (const entry of entries) {
+            try { candidates = candidates.concat(passwordCandidatesFromJson(JSON.parse(entry.text), email, source)); } catch { /* Ignore unrelated entries. */ }
+          }
+        }
+      }
+      candidates = dedupeCandidates(candidates);
+      mergeImportCandidates(candidates);
+      renderImportCandidates();
+      setImportStatus('passwordImportStatus', candidates.length ? `${candidates.length} matching login${candidates.length === 1 ? '' : 's'} found. Review them below.` : 'No saved logins matched that email address.', candidates.length ? 'success' : 'warning');
+    } catch (error) {
+      setImportStatus('passwordImportStatus', `${t('parseError')} ${error.message || ''}`.trim(), 'error');
+    }
+  };
+
   function restoreChecklistState() {
     document.querySelectorAll('#predeleteChecklist .checklist-item, #safetyChecklist .checklist-item').forEach(item => {
       item.classList.remove('checked');
@@ -2246,6 +2894,8 @@
     const list = document.getElementById('checklist');
     const empty = document.getElementById('emptyState');
     const actions = document.getElementById('checklistActions');
+    renderReminderAppSelect();
+    renderEvidenceAppSelect();
 
     if (state.apps.length === 0) {
       list.innerHTML = '';
@@ -2271,6 +2921,7 @@
       const tagClass = app.priority === 'critical' ? 'tag-critical' : app.priority === 'optional' ? 'tag-optional' : 'tag-important';
       const tagLabel = app.priority === 'critical' ? 'Critical' : app.priority === 'optional' ? 'Optional' : 'Important';
       const guide = getMigrationGuide(app.name);
+      const difficulty = difficultyForService(app.name);
       const guideId = 'guide-' + app.id;
 
       return `<li class="checklist-item ${app.done ? 'checked' : ''}" data-id="${app.id}">
@@ -2281,6 +2932,7 @@
           <div class="item-title">${escapeHtml(app.name)}</div>
           ${app.notes ? `<div class="item-desc">${escapeHtml(app.notes)}</div>` : ''}
           <span class="item-tag ${tagClass}">${tagLabel}</span>
+          ${difficulty ? `<span class="difficulty-badge difficulty-${escapeHtml(difficulty.level || difficulty.difficulty)}">${escapeHtml(difficulty.label || difficultyLabel(difficulty.level || difficulty.difficulty))}</span>` : ''}
           ${guide ? `<br><button class="guide-toggle" onclick="event.stopPropagation(); toggleGuide('${guideId}')">How to migrate &darr;</button>
           <div class="migration-guide" id="${guideId}">
             <h4>Migration Steps</h4>
@@ -2350,7 +3002,7 @@
       'grindr': ['Open Grindr > Settings > Account', 'Add email and set a password', 'Disconnect Facebook from linked accounts', 'Test email/password login'],
     };
     const key = name.toLowerCase().trim();
-    return guides[key] || null;
+    return communityGuides[key]?.steps || guides[key] || null;
   }
 
   window.toggleGuide = function(id) {
@@ -2389,6 +3041,80 @@
     html += '</div>';
     container.innerHTML = html;
   }
+
+  function difficultyForService(name) {
+    const key = String(name || '').toLowerCase().trim();
+    if (communityGuides[key]) {
+      return {
+        level: communityGuides[key].difficulty || 'medium',
+        label: communityGuides[key].label || difficultyLabel(communityGuides[key].difficulty),
+        detail: communityGuides[key].detail
+      };
+    }
+    return DIFFICULTY_LIBRARY[key] || null;
+  }
+
+  function difficultyLabel(level) {
+    return { easy: 'Easy', medium: 'Medium', hard: 'Hard', locked: 'No migration' }[level] || 'Unknown';
+  }
+
+  function normaliseCommunityCatalog(payload) {
+    const rawServices = Array.isArray(payload) ? payload : Array.isArray(payload?.services) ? payload.services : [];
+    const guides = {};
+    rawServices.forEach(service => {
+      if (!service || typeof service !== 'object') return;
+      const name = cleanCandidateName(service.name || service.title);
+      const steps = Array.isArray(service.steps) ? service.steps.filter(step => typeof step === 'string' && step.trim()).map(step => step.trim()) : [];
+      const difficulty = ['easy', 'medium', 'hard', 'locked'].includes(service.difficulty) ? service.difficulty : '';
+      if (!name || (!steps.length && !difficulty)) return;
+      guides[name.toLowerCase()] = {
+        name,
+        steps,
+        difficulty,
+        label: service.label || difficultyLabel(difficulty),
+        detail: typeof service.detail === 'string' ? service.detail.trim() : 'Community-contributed guidance.'
+      };
+    });
+    return guides;
+  }
+
+  window.loadCommunitySnippets = async function() {
+    const status = document.getElementById('communityStatus');
+    if (status) status.textContent = 'Loading the read-only catalog…';
+    try {
+      let response = await fetch(COMMUNITY_SNIPPETS_URL, { cache: 'no-store' });
+      if (!response.ok) response = await fetch('migration-snippets.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Catalog returned ${response.status}.`);
+      const catalog = normaliseCommunityCatalog(await response.json());
+      communityGuides = catalog;
+      renderDifficultyDirectory();
+      if (status) status.textContent = `${Object.keys(catalog).length} community snippet${Object.keys(catalog).length === 1 ? '' : 's'} loaded.`;
+      notify(t('snippetsLoaded'), 'success');
+    } catch (error) {
+      if (status) status.textContent = `Could not load the community catalog. Built-in guidance remains available. ${error.message || ''}`.trim();
+      renderDifficultyDirectory();
+    }
+  };
+
+  window.renderDifficultyDirectory = function(force = false) {
+    const el = document.getElementById('difficultyDirectory');
+    if (!el) return;
+    const services = new Map(Object.entries(DIFFICULTY_LIBRARY).map(([name, value]) => [name, { name, ...value }]));
+    Object.values(communityGuides).forEach(service => {
+      const key = service.name.toLowerCase();
+      services.set(key, { ...services.get(key), ...service, name: service.name });
+    });
+    const rows = [...services.values()].sort((a, b) => a.name.localeCompare(b.name));
+    el.innerHTML = rows.map(service => {
+      const level = service.difficulty || service.level || 'medium';
+      const label = service.label || difficultyLabel(level);
+      const detail = service.detail || 'Review the service account settings before disconnecting Facebook.';
+      return `<div class="difficulty-row">
+        <strong>${escapeHtml(service.name)} <span class="difficulty-badge difficulty-${escapeHtml(level)}">${escapeHtml(label)}</span></strong>
+        <span>${escapeHtml(detail)}</span>
+      </div>`;
+    }).join('');
+  };
 
   // "What will break" simulator
   function renderBreakSimulator() {
@@ -2752,12 +3478,23 @@
     }
   }
 
+  function renderAll() {
+    renderProfileControls();
+    applyLanguage();
+    applyTheme();
+    renderChecklist();
+    restoreChecklistState();
+    renderReminders();
+    renderEvidenceList();
+    renderActivityLog();
+    renderDifficultyDirectory();
+    updateRegretBuffer();
+  }
+
   // Init
-  renderChecklist();
-  restorePredelete();
-  restoreSafety();
-  updateProgress();
-  updateRegretBuffer();
+  renderAll();
+  announceDueReminders();
+  window.setInterval(announceDueReminders, 60000);
 })();
 </script>
 </body>

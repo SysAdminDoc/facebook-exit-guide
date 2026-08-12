@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "services": [
+    {
+      "name": "Spotify",
+      "difficulty": "easy",
+      "detail": "A standalone password can usually be set before disconnecting Facebook.",
+      "steps": [
+        "Open Spotify account settings and set or change your password.",
+        "Confirm your email address and test email/password sign-in in a private window.",
+        "Disconnect Facebook under the social or connected accounts settings."
+      ]
+    },
+    {
+      "name": "Airbnb",
+      "difficulty": "medium",
+      "detail": "Review Login & Security and verify email, phone, and password before unlinking.",
+      "steps": [
+        "Open Account > Login & Security.",
+        "Verify your email and phone number, then add a standalone password.",
+        "Test the new login before disconnecting Facebook under Social accounts."
+      ]
+    },
+    {
+      "name": "Facebook Marketplace",
+      "difficulty": "locked",
+      "detail": "Listings, ratings, and Marketplace history are tied to Facebook and have no migration path.",
+      "steps": [
+        "Export or screenshot active listings and important transaction details.",
+        "Save contact information for buyers or sellers you still need to reach.",
+        "Treat this service as unavailable after Facebook deletion."
+      ]
+    }
+  ]
+}
