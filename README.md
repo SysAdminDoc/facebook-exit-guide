@@ -1,6 +1,6 @@
 # Facebook Exit Guide
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://sysadmindoc.github.io/facebook-exit-guide/)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue)](https://sysadmindoc.github.io/facebook-exit-guide/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub Pages](https://img.shields.io/badge/live-GitHub%20Pages-brightgreen)](https://sysadmindoc.github.io/facebook-exit-guide/)
 
