@@ -9,6 +9,7 @@ All notable changes to facebook-exit-guide will be documented in this file.
 - Added: Optional read-only community migration snippets and service difficulty ratings
 - Added: Profile-scoped reminder scheduling with browser notification support and calendar fallback
 - Added: Local IndexedDB evidence vault for confirmation notes and screenshots
+- Added: Independent family-member profiles with isolated checklists, progress, reminders, and deletion state
 
 ## [v1.1.0] - 2026-06-19
 

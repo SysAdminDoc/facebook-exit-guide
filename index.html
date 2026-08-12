@@ -2468,7 +2468,7 @@
     try {
       await writeEvidence({ id: makeId('evidence'), profileId: activeProfile().id, appId: app.id, kind: 'text', data: text, createdAt: new Date().toISOString() });
       document.getElementById('evidenceText').value = '';
-      await renderEvidenceList();
+      await window.renderEvidenceList();
       notify(t('evidenceSaved'), 'success');
     } catch (error) {
       notify(error.message || 'Could not save evidence.', 'error');
@@ -2501,7 +2501,7 @@
       const data = await readFileAsDataUrl(file);
       await writeEvidence({ id: makeId('evidence'), profileId: activeProfile().id, appId: app.id, kind: 'image', data, name: file.name, createdAt: new Date().toISOString() });
       document.getElementById('evidenceFile').value = '';
-      await renderEvidenceList();
+      await window.renderEvidenceList();
       notify(t('evidenceSaved'), 'success');
     } catch (error) {
       notify(error.message || 'Could not save evidence.', 'error');
@@ -2511,7 +2511,7 @@
   window.deleteEvidence = async function(id) {
     try {
       await removeEvidence(id);
-      await renderEvidenceList();
+      await window.renderEvidenceList();
       notify(t('evidenceDeleted'), 'success');
     } catch (error) {
       notify(error.message || 'Could not delete evidence.', 'error');
@@ -3086,12 +3086,12 @@
       if (!response.ok) throw new Error(`Catalog returned ${response.status}.`);
       const catalog = normaliseCommunityCatalog(await response.json());
       communityGuides = catalog;
-      renderDifficultyDirectory();
+      window.renderDifficultyDirectory();
       if (status) status.textContent = `${Object.keys(catalog).length} community snippet${Object.keys(catalog).length === 1 ? '' : 's'} loaded.`;
       notify(t('snippetsLoaded'), 'success');
     } catch (error) {
       if (status) status.textContent = `Could not load the community catalog. Built-in guidance remains available. ${error.message || ''}`.trim();
-      renderDifficultyDirectory();
+      window.renderDifficultyDirectory();
     }
   };
 
@@ -3484,9 +3484,9 @@
     renderChecklist();
     restoreChecklistState();
     renderReminders();
-    renderEvidenceList();
+    window.renderEvidenceList();
     renderActivityLog();
-    renderDifficultyDirectory();
+    window.renderDifficultyDirectory();
     updateRegretBuffer();
   }
 
