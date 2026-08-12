@@ -2314,9 +2314,8 @@
       const app = state.apps.find(item => item.id === reminder.appId);
       const title = 'Facebook Exit Guide reminder';
       const body = `Follow up on ${app?.name || reminder.appName || 'an unmigrated service'}.`;
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try { new Notification(title, { body }); } catch { /* Some browsers block notifications in a background tab. */ }
-      }
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      try { new Notification(title, { body }); } catch { return; /* Some browsers block notifications in a background tab. */ }
       reminder.notifiedAt = new Date().toISOString();
       changed = true;
     });

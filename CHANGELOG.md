@@ -7,6 +7,8 @@ All notable changes to facebook-exit-guide will be documented in this file.
 - Added: Local Facebook data-export parsing for ZIP and JSON files with reviewable checklist candidates
 - Added: Chrome/Firefox CSV, Bitwarden JSON, and 1Password 1PUX password-export matching by Facebook email
 - Added: Optional read-only community migration snippets and service difficulty ratings
+- Added: Profile-scoped reminder scheduling with browser notification support and calendar fallback
+- Added: Local IndexedDB evidence vault for confirmation notes and screenshots
 
 ## [v1.1.0] - 2026-06-19
 
